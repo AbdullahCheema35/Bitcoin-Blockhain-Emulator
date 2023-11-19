@@ -1,100 +1,73 @@
 package main
 
 import (
-	"encoding/gob"
-	"fmt"
-	"net"
+	"flag"
+	"log"
 	"os"
-	"strconv"
+
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/bootstrap"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/client"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/server"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
-type Message struct {
-	Content string
-}
-
-func handleConnection(conn net.Conn, messages chan Message) {
-	defer conn.Close()
-
-	decoder := gob.NewDecoder(conn)
-	var msg Message
-
-	err := decoder.Decode(&msg)
-	if err != nil {
-		fmt.Println("Error decoding message:", err)
-		return
-	}
-
-	messages <- msg
-}
-
-func startServer(port int, messages chan Message) {
-	address := ":" + strconv.Itoa(port)
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		fmt.Println("Error listening:", err)
-		return
-	}
-	defer listener.Close()
-
-	fmt.Println("Node listening on port", port)
-
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Println("Error accepting connection:", err)
-			continue
-		}
-		go handleConnection(conn, messages)
-	}
-}
-
-func sendMessageToNode(address string, msg Message) error {
-	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	encoder := gob.NewEncoder(conn)
-	err = encoder.Encode(msg)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
+type NodeAddress = types.NodeAddress
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run p2p.go <port>")
-		return
+	var (
+		port            int
+		bootstrapPort   int
+		isBootstrapNode bool
+	)
+
+	flag.IntVar(&port, "p", 0, "The server port")
+	flag.IntVar(&bootstrapPort, "b", 0, "The bootstrap node's port")
+	flag.BoolVar(&isBootstrapNode, "m", false, "If this node is the bootstrap node, set this flag; -b will be used as the bootstrap node's bootstrap port")
+	flag.Parse()
+
+	if flag.NFlag() < 2 {
+		flag.Usage()
+		os.Exit(1)
 	}
 
-	port, err := strconv.Atoi(os.Args[1])
-	if err != nil {
-		fmt.Println("Invalid port number:", err)
-		return
+	// if both -b and -m are set
+	if port == 0 || bootstrapPort == 0 {
+		log.Println("Error: Both -p and -b flags must be set, -m flag is optional (if -m is set, it means this is the bootstrap node, and -b will be used as the bootstrap node's bootstrap port)")
+		os.Exit(1)
 	}
 
-	messages := make(chan Message)
+	if isBootstrapNode { // if -m is setTransaction
+		// This is the bootstrap node of the network
+		log.Println("This is the bootstrap node")
+		log.Println("Bootstrap node's Server port:", port)
+		log.Println("Bootstrap Node's Bootstrap port :", bootstrapPort)
 
-	go startServer(port, messages)
+		// Start the normal server
+		var serverNode NodeAddress = types.NewNodeAddress(port)
+		go server.StartServer(serverNode)
 
-	// Simulate sending a message to another node
-	go func() {
-		otherNodePort := 8081 // Change this to the port of another node
-		otherNodeAddress := fmt.Sprintf("localhost:%d", otherNodePort)
-		msg := Message{Content: "Hello from Node " + strconv.Itoa(port)}
+		// Start the bootstrap server
+		var bootstrapNode NodeAddress = types.NewNodeAddress(bootstrapPort)
+		go bootstrap.StartBootstrapServer(bootstrapNode, serverNode)
 
-		err := sendMessageToNode(otherNodeAddress, msg)
-		if err != nil {
-			fmt.Println("Error sending message:", err)
-			return
-		}
-		fmt.Println("Message sent to Node", otherNodePort)
-	}()
+		// Start the client
+		go client.StartClient(serverNode, bootstrapNode)
 
-	// Receive messages from other nodes
-	receivedMsg := <-messages
-	fmt.Println("Received message:", receivedMsg.Content)
+	} else { // if -b is set
+		// This is a regular node
+		log.Println("This is a regular node")
+		log.Println("Regular node's Server port:", port)
+		log.Println("Regular node's Bootstrap port:", bootstrapPort)
+
+		// Start the normal server
+		var serverNode NodeAddress = types.NewNodeAddress(port)
+		go server.StartServer(serverNode)
+
+		// Start the client
+		var bootstrapNode NodeAddress = types.NewNodeAddress(bootstrapPort)
+		go client.StartClient(serverNode, bootstrapNode)
+	}
+
+	// Keep the program running
+	select {}
 }
