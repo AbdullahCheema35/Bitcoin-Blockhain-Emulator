@@ -5,23 +5,13 @@ import (
 	"strconv"
 )
 
-// Transaction represents a message that can be sent between nodes
-type Transaction struct {
-	Content string
-}
-
-// NewTransaction creates a new Transaction instance
-func NewTransaction(content string) Transaction {
-	return Transaction{Content: content}
-}
-
-// NodeAddress represents IP and Port information
 type NodeAddress struct {
 	Port int
 	IP   string
 }
 
 // NewNodeAddress creates a new NodeAddress instance with default IP value if not provided
+// First parameter is port, second is NodeID (node's server addr), third is IP (optional)
 func NewNodeAddress(port int, ip ...string) NodeAddress {
 	var ipAddress string
 
@@ -107,4 +97,45 @@ func (ncl *ConnectionsList) RemoveNodeConnection(nodeConnection NodeConnection) 
 // GetNodeConnections returns the list of node connections
 func (ncl *ConnectionsList) GetNodeConnections() []NodeConnection {
 	return ncl.NodeConnections
+}
+
+type ConnectionRequestType uint8
+
+const (
+	ConnectionRequestTypeSuccess ConnectionRequestType = iota
+	ConnectionRequestTypeFailure
+)
+
+type ConnectionResponseType uint8
+
+const (
+	ConnectionResponseTypeSuccess ConnectionResponseType = iota
+	ConnectionResponseTypeFailure
+)
+
+type MessageType uint8
+
+type MessageHeader struct {
+	Type   MessageType
+	Sender NodeAddress
+}
+
+const (
+	MessageTypeTransaction MessageType = iota
+	MessageTypeBlock
+	MessageTypeRequest
+	MessageTypeResponse
+	MessageTypeConnection
+	MessageTypeConnectionRequest
+	MessageTypeConnectionResponse
+)
+
+type Message struct {
+	Header MessageHeader
+	Body   interface{}
+	Sender interface{}
+}
+
+func NewMessage(header MessageHeader, body interface{}, sender interface{}) Message {
+	return Message{Header: header, Body: body, Sender: sender}
 }

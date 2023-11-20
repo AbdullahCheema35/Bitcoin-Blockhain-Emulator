@@ -7,7 +7,6 @@ import (
 type (
 	NodeAddress     = types.NodeAddress
 	NodesList       = types.NodesList
-	Transaction     = types.Transaction
 	ConnectionsList = types.ConnectionsList
 )
 

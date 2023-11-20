@@ -5,26 +5,108 @@ import (
 	"log"
 	"net"
 
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
-type Transaction = types.Transaction
+type (
+	NodeAddress = types.NodeAddress
+	Message     = types.Message
+)
 
-type NodeAddress = types.NodeAddress
+func respondToConnectionRequest(conn net.Conn) bool {
+	maxNeighbours := configuration.MaxNeighbours
+	currentNeighbours := <-configuration.CurrentNeighbours
+	currentConnections := <-configuration.CurrentConnections
+	defer func() {
+		configuration.CurrentConnections <- currentConnections
+		configuration.CurrentNeighbours <- currentNeighbours
+	}()
+	if currentNeighbours >= maxNeighbours {
+		log.Println("Maximum neighbours reached")
 
-func handleConnection(conn net.Conn, messages chan Transaction) {
+		messageHeader := types.MessageTypeConnectionRequest
+		messageBody := types.ConnectionRequestTypeFailure
+		message := types.NewMessage(messageHeader, messageBody)
+
+		enc := gob.NewEncoder(conn)
+		err := enc.Encode(message)
+		if err != nil {
+			log.Println("Error encoding:", err)
+		}
+		return false
+	} else {
+		// increment the current neighbours
+		currentNeighbours++
+
+		log.Println("Current neighbours:", currentNeighbours)
+
+		messageHeader := types.MessageTypeConnectionRequest
+		messageBody := types.ConnectionRequestTypeFailure
+		message := types.NewMessage(messageHeader, messageBody)
+
+		enc := gob.NewEncoder(conn)
+		err := enc.Encode(message)
+		if err != nil {
+			log.Println("Error encoding:", err)
+		}
+		// receive the response from the client
+		dec := gob.NewDecoder(conn)
+		var messageFromClient Message
+		err = dec.Decode(&messageFromClient)
+		if err != nil {
+			log.Println("Error decoding:", err)
+		}
+		// check if the message is valid
+		if messageFromClient.Header == types.MessageTypeConnectionResponse {
+			// It means that client has sent its NodeAddress(Server's Address) in the body
+			// So we can add it to our list of connections
+			clientNodeAddress := messageFromClient.Body.(NodeAddress)
+
+			// Create a new NodeConnection object
+			clientNodeConnection := types.NewNodeConnection(clientNodeAddress, conn)
+
+			// Add the connection to the list of connections
+			currentConnections.AddNodeConnection(clientNodeConnection)
+
+			log.Println("Connection established successfully with", clientNodeAddress.GetAddress())
+		} else {
+			log.Println("Client sent an invalid message")
+		}
+		return true
+	}
+}
+
+func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	decoder := gob.NewDecoder(conn)
-	var msg Transaction
+	var isConnectionSuccess bool = respondToConnectionRequest(conn)
 
-	err := decoder.Decode(&msg)
-	if err != nil {
-		log.Println("Error decoding message:", err)
+	if !isConnectionSuccess {
 		return
-	}
+	} else {
+		// Now we can start listening for messages from the client
+		dec := gob.NewDecoder(conn)
+		for {
+			var message Message
+			err := dec.Decode(&message)
+			if err != nil {
+				log.Println("Error decoding:", err)
+				break
+			}
+			switch message.Header {
+			case types.MessageTypeTransaction:
+				sender := message.Sender.(NodeAddress)
+				log.Println("Received a transaction from", message.Sender.GetAddress())
+			case types.MessageTypeBlock:
+				sender := message.Sender.(NodeAddress)
+				log.Println("Received a block from", sender.GetAddress())
+			default:
+				log.Println("Received an unknown message from", message.Sender.GetAddress())
+			}
+		}
 
-	messages <- msg
+	}
 }
 
 func StartServer(serverNode NodeAddress) {
@@ -44,6 +126,6 @@ func StartServer(serverNode NodeAddress) {
 			log.Println("Error accepting connection:", err)
 			continue
 		}
-		go handleConnection(conn, messages)
+		go handleConnection(conn)
 	}
 }
