@@ -7,6 +7,7 @@ import (
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/bootstrap"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/client"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/server"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
@@ -36,6 +37,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	var serverNode NodeAddress = types.NewNodeAddress(port)
+	var bootstrapNode NodeAddress = types.NewNodeAddress(bootstrapPort)
+
+	// Initialize the configuration
+	configuration.InitConfiguration(serverNode, bootstrapNode, bootstrapNode, isBootstrapNode)
+
 	if isBootstrapNode { // if -m is setTransaction
 		// This is the bootstrap node of the network
 		log.Println("This is the bootstrap node")
@@ -43,15 +50,13 @@ func main() {
 		log.Println("Bootstrap Node's Bootstrap port :", bootstrapPort)
 
 		// Start the normal server
-		var serverNode NodeAddress = types.NewNodeAddress(port)
-		go server.StartServer(serverNode)
+		go server.StartServer()
 
 		// Start the bootstrap server
-		var bootstrapNode NodeAddress = types.NewNodeAddress(bootstrapPort)
 		go bootstrap.StartBootstrapServer(bootstrapNode, serverNode)
 
 		// Start the client
-		go client.StartClient(serverNode, bootstrapNode)
+		go client.StartClient()
 
 	} else { // if -b is set
 		// This is a regular node
@@ -60,12 +65,10 @@ func main() {
 		log.Println("Regular node's Bootstrap port:", bootstrapPort)
 
 		// Start the normal server
-		var serverNode NodeAddress = types.NewNodeAddress(port)
-		go server.StartServer(serverNode)
+		go server.StartServer()
 
 		// Start the client
-		var bootstrapNode NodeAddress = types.NewNodeAddress(bootstrapPort)
-		go client.StartClient(serverNode, bootstrapNode)
+		go client.StartClient()
 	}
 
 	// Keep the program running

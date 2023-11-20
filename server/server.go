@@ -14,19 +14,43 @@ type (
 	Message     = types.Message
 )
 
-func respondToConnectionRequest(conn net.Conn) bool {
-	maxNeighbours := configuration.MaxNeighbours
-	currentNeighbours := <-configuration.CurrentNeighbours
-	currentConnections := <-configuration.CurrentConnections
-	defer func() {
-		configuration.CurrentConnections <- currentConnections
-		configuration.CurrentNeighbours <- currentNeighbours
-	}()
+func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
+	dec := gob.NewDecoder(conn)
+	var message Message
+	err := dec.Decode(&message)
+	if err != nil {
+		log.Println("Error decoding:", err)
+		return false, types.NodeAddress{}
+	}
+	switch message.Header.Type {
+	case types.MessageTypeConnectionRequest:
+		sender := message.Header.Sender
+		if message.Body != types.ConnectionRequestTypeSuccess {
+			log.Printf("Client %v sent a connection request with non-success type\n", sender.GetAddress())
+			return false, types.NodeAddress{}
+		}
+		log.Println("Received a connection request from", sender.GetAddress())
+		return true, sender
+	default:
+		log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
+		return false, types.NodeAddress{}
+	}
+}
+
+func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) bool {
+	maxNeighbours := configuration.GetMaxNeighbours()
+	currentNeighbours := configuration.LockCurrentNeighbours()
+	currentConnections := configuration.LockCurrentConnections()
+	defer configuration.UnlockCurrentNeighbours(currentNeighbours)
+	defer configuration.UnlockCurrentConnections(currentConnections)
+
 	if currentNeighbours >= maxNeighbours {
 		log.Println("Maximum neighbours reached")
 
-		messageHeader := types.MessageTypeConnectionRequest
-		messageBody := types.ConnectionRequestTypeFailure
+		messageType := types.MessageTypeConnectionResponse
+		sender := configuration.GetSelfServerAddress()
+		messageHeader := types.NewMessageHeader(messageType, sender)
+		messageBody := types.ConnectionResponseTypeFailure
 		message := types.NewMessage(messageHeader, messageBody)
 
 		enc := gob.NewEncoder(conn)
@@ -36,45 +60,40 @@ func respondToConnectionRequest(conn net.Conn) bool {
 		}
 		return false
 	} else {
-		// increment the current neighbours
-		currentNeighbours++
-
-		log.Println("Current neighbours:", currentNeighbours)
-
-		messageHeader := types.MessageTypeConnectionRequest
-		messageBody := types.ConnectionRequestTypeFailure
+		messageType := types.MessageTypeConnectionResponse
+		sender := configuration.GetSelfServerAddress()
+		messageHeader := types.NewMessageHeader(messageType, sender)
+		messageBody := types.ConnectionResponseTypeSuccess
 		message := types.NewMessage(messageHeader, messageBody)
 
 		enc := gob.NewEncoder(conn)
 		err := enc.Encode(message)
 		if err != nil {
 			log.Println("Error encoding:", err)
+			return false
 		}
-		// receive the response from the client
-		dec := gob.NewDecoder(conn)
-		var messageFromClient Message
-		err = dec.Decode(&messageFromClient)
-		if err != nil {
-			log.Println("Error decoding:", err)
-		}
-		// check if the message is valid
-		if messageFromClient.Header == types.MessageTypeConnectionResponse {
-			// It means that client has sent its NodeAddress(Server's Address) in the body
-			// So we can add it to our list of connections
-			clientNodeAddress := messageFromClient.Body.(NodeAddress)
-
-			// Create a new NodeConnection object
-			clientNodeConnection := types.NewNodeConnection(clientNodeAddress, conn)
-
-			// Add the connection to the list of connections
-			currentConnections.AddNodeConnection(clientNodeConnection)
-
-			log.Println("Connection established successfully with", clientNodeAddress.GetAddress())
-		} else {
-			log.Println("Client sent an invalid message")
-		}
+		// increment the current neighbours
+		currentNeighbours++
+		// Add the client node address to the current connections
+		clientNodeConnection := types.NewNodeConnection(clientNodeAddress, conn)
+		currentConnections.AddNodeConnection(clientNodeConnection)
+		log.Println("Current neighbours:", currentNeighbours)
+		log.Println("Current connections:", currentConnections.GetNodeConnections())
 		return true
 	}
+}
+
+func respondToConnectionRequest(conn net.Conn) bool {
+	var isRequestSuccess bool
+	var clientNodeAddress NodeAddress
+
+	isRequestSuccess, clientNodeAddress = receiveClientRequest(conn)
+	if !isRequestSuccess {
+		return false
+	}
+
+	isConnectionSuccess := sendResponseToClient(conn, clientNodeAddress)
+	return isConnectionSuccess
 }
 
 func handleConnection(conn net.Conn) {
@@ -84,32 +103,37 @@ func handleConnection(conn net.Conn) {
 
 	if !isConnectionSuccess {
 		return
-	} else {
-		// Now we can start listening for messages from the client
-		dec := gob.NewDecoder(conn)
-		for {
-			var message Message
-			err := dec.Decode(&message)
-			if err != nil {
-				log.Println("Error decoding:", err)
-				break
-			}
-			switch message.Header {
-			case types.MessageTypeTransaction:
-				sender := message.Sender.(NodeAddress)
-				log.Println("Received a transaction from", message.Sender.GetAddress())
-			case types.MessageTypeBlock:
-				sender := message.Sender.(NodeAddress)
-				log.Println("Received a block from", sender.GetAddress())
-			default:
-				log.Println("Received an unknown message from", message.Sender.GetAddress())
-			}
-		}
+	}
 
+	// Now we can start listening for messages from the Client Node
+	dec := gob.NewDecoder(conn)
+	for {
+		var message Message
+		err := dec.Decode(&message)
+		if err != nil {
+			log.Println("Error decoding:", err)
+			break
+		}
+		switch message.Header.Type {
+		case types.MessageTypeTransaction:
+			sender := message.Header.Sender
+			// TODO: Handle the transaction
+			// Temp fix
+			transactionData := message.Body.(string)
+			log.Printf("Received transaction %v from %v\n", transactionData, sender.GetAddress())
+			// End of temp fix
+		case types.MessageTypeBlock:
+			sender := message.Header.Sender
+			log.Println("Received a block from", sender.GetAddress())
+		default:
+			sender := message.Header.Sender
+			log.Println("Received an unknown message from", sender.GetAddress())
+		}
 	}
 }
 
-func StartServer(serverNode NodeAddress) {
+func StartServer() {
+	serverNode := configuration.GetSelfServerAddress()
 	serverAddress := serverNode.GetAddress()
 	listener, err := net.Listen("tcp", serverAddress)
 	if err != nil {

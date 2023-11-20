@@ -115,11 +115,6 @@ const (
 
 type MessageType uint8
 
-type MessageHeader struct {
-	Type   MessageType
-	Sender NodeAddress
-}
-
 const (
 	MessageTypeTransaction MessageType = iota
 	MessageTypeBlock
@@ -130,12 +125,20 @@ const (
 	MessageTypeConnectionResponse
 )
 
+type MessageHeader struct {
+	Type   MessageType
+	Sender NodeAddress
+}
+
+func NewMessageHeader(messageType MessageType, sender NodeAddress) MessageHeader {
+	return MessageHeader{Type: messageType, Sender: sender}
+}
+
 type Message struct {
 	Header MessageHeader
 	Body   interface{}
-	Sender interface{}
 }
 
-func NewMessage(header MessageHeader, body interface{}, sender interface{}) Message {
-	return Message{Header: header, Body: body, Sender: sender}
+func NewMessage(header MessageHeader, body interface{}) Message {
+	return Message{Header: header, Body: body}
 }

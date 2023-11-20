@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/common"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
@@ -19,11 +20,43 @@ func connectToNode(node NodeAddress) net.Conn {
 	return conn
 }
 
+func sendConnectionRequestToNode(node NodeAddress, conn net.Conn) bool {
+	messageType := types.MessageTypeConnectionRequest
+	sender := configuration.GetSelfServerAddress()
+	messageHeader := types.NewMessageHeader(messageType, sender)
+	messageBody := types.ConnectionRequestTypeSuccess
+	message := types.NewMessage(messageHeader, messageBody)
+
+	isMessageSent := common.SendMessage(conn, message)
+	return isMessageSent
+}
+
+func receiveConnectionResponseFromNode(conn net.Conn) bool {
+	isMessageReceived, message := common.ReceiveMessage(conn)
+	if !isMessageReceived {
+		return false
+	}
+	switch message.Header.Type {
+	case types.MessageTypeConnectionResponse:
+		if message.Body != types.ConnectionResponseTypeSuccess {
+			log.Printf("Node %v sent a connection response with non-success type\n", message.Header.Sender.GetAddress())
+			return false
+		}
+		log.Println("Received a successful connection response from", message.Header.Sender.GetAddress())
+		return true
+	default:
+		log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
+		return false
+	}
+}
+
 // Establishes connections with the nodes at the given addresses and returns the pointer to the connections' list
-func establishConnectionWithExistingNodes(existingNodesList NodesList) ConnectionsList {
-	var nodeConnectionsList ConnectionsList = types.NewNodeConnectionsList()
-	minNeighbours := configuration.MinNeighbours
-	currentNeighbours := configuration.CurrentNeighbours
+func establishConnectionWithExistingNodes(existingNodesList NodesList) {
+	minNeighbours := configuration.GetMinNeighbours()
+	currentNeighbours := configuration.LockCurrentNeighbours()
+	currentConnections := configuration.LockCurrentConnections()
+	defer configuration.UnlockCurrentNeighbours(currentNeighbours)
+	defer configuration.UnlockCurrentConnections(currentConnections)
 
 	for _, node := range existingNodesList.GetNodes() {
 		if currentNeighbours >= minNeighbours {
@@ -31,10 +64,15 @@ func establishConnectionWithExistingNodes(existingNodesList NodesList) Connectio
 		}
 		var conn net.Conn = connectToNode(node)
 		if conn != nil {
-			currentNeighbours++
-			nodeConnection := types.NewNodeConnection(node, conn)
-			nodeConnectionsList.AddNodeConnection(nodeConnection)
+			isConnectionRequestSuccess := sendConnectionRequestToNode(node, conn)
+			if isConnectionRequestSuccess {
+				isConnectionResponseSuccess := receiveConnectionResponseFromNode(conn)
+				if isConnectionResponseSuccess {
+					currentNeighbours++
+					nodeConnection := types.NewNodeConnection(node, conn)
+					currentConnections.AddNodeConnection(nodeConnection)
+				}
+			}
 		}
 	}
-	return nodeConnectionsList
 }

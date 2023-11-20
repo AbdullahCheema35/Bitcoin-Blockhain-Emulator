@@ -1,6 +1,12 @@
 package client
 
 import (
+	"log"
+	"math/rand"
+	"time"
+
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/common"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
@@ -10,29 +16,85 @@ type (
 	ConnectionsList = types.ConnectionsList
 )
 
-func StartClient(serverNode NodeAddress, bootstrapNode NodeAddress) {
-	// Get the list of existing nodes in the network from the bootstrap node
-	var existingNodes *NodesList = getExistingNodesInNetwork(bootstrapNode, serverNode)
-	if existingNodes == nil {
-		return
+func sendArbitraryTransactionToNode(nodeConn types.NodeConnection) (bool, string) {
+	conn := nodeConn.Conn
+	messageType := types.MessageTypeTransaction
+	sender := configuration.GetSelfServerAddress()
+	messageHeader := types.NewMessageHeader(messageType, sender)
+	// Transaction body is randomly constructed string for now
+	// TODO: Make a transaction type
+
+	// Create a random string of length 10
+	rand.Seed(time.Now().UnixNano())
+
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+	length := 10
+
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
 	}
-	existingNodesList := *existingNodes
 
-	// Connect to the existing nodes
-	var nodeConnectionsList ConnectionsList = establishConnectionWithExistingNodes(existingNodesList)
+	randomString := string(b)
+	// End of random string generation
+	// Temp fix
 
-	// // Start listening for incoming transactions
-	// go listenForIncomingTransactions(serverNode)
+	messageBody := randomString
+	message := types.NewMessage(messageHeader, messageBody)
 
-	// // Start listening for incoming connections
-	// go listenForIncomingConnections(serverNode)
+	isMessageSent := common.SendMessage(conn, message)
 
-	// // Start sending transactions to the existing nodes
-	// go sendTransactionsToExistingNodes(nodeConnectionsList)
+	return isMessageSent, randomString
+}
 
-	// // Start sending connections to the existing nodes
-	// go sendConnectionsToExistingNodes(nodeConnectionsList)
+func sendArbitraryTransactionToAllNodes(connectionsList ConnectionsList) {
+	// currentConnections := configuration.LockCurrentConnections()
+	// defer configuration.UnlockCurrentConnections(currentConnections)
 
-	// // Start sending transactions to the bootstrap node
-	// go sendTransactionsToBootstrapNode(bootstrapNode)
+	for _, nodeConn := range connectionsList.GetNodeConnections() {
+		isMessageSent, transactionData := sendArbitraryTransactionToNode(nodeConn)
+		if !isMessageSent {
+			log.Printf("Could not send arbitrary transaction %v to %v\n", transactionData, nodeConn.Node.GetAddress())
+		} else {
+			log.Printf("Sent arbitrary transaction %v to %v\n", transactionData, nodeConn.Node.GetAddress())
+		}
+	}
+}
+
+func StartClient() {
+	serverNode := configuration.GetSelfServerAddress()
+	bootstrapNode := configuration.GetBootstrapNodeAddress()
+	isSelfBootstrapNode := configuration.GetIsSelfBootstrapNode()
+
+	if !isSelfBootstrapNode {
+		// It is the bootstrap node of the network
+		// Don't establish connection with the bootstrap node
+		// Also, dont try to initialize the connections with the existing nodes in network, they will connect to this node, once they join the network
+
+		// Get the list of existing nodes in the network from the bootstrap node
+		var existingNodes *NodesList = getExistingNodesInNetwork(bootstrapNode, serverNode)
+		if existingNodes == nil {
+			log.Println("Could not get the list of existing nodes in the network. Exiting Client...")
+			return
+		}
+		existingNodesList := *existingNodes
+
+		// Connect to the existing nodes
+		establishConnectionWithExistingNodes(existingNodesList)
+	}
+
+	for {
+		// Wait for ten seconds. Then send arbitrary transaction to all nodes
+		time.Sleep(10 * time.Second)
+		// Check if there are any neighbours
+		currentNeighbours := configuration.ReadCurrentNeighbours()
+		currentConnectionsList := configuration.ReadCurrentConnections()
+		if currentNeighbours == 0 {
+			log.Println("No neighbours to send arbitrary transaction to")
+			continue
+		}
+		// Send arbitrary transaction to all nodes
+		sendArbitraryTransactionToAllNodes(currentConnectionsList)
+	}
 }
