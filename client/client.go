@@ -86,7 +86,7 @@ func StartClient() {
 
 	for {
 		// Wait for ten seconds. Then send arbitrary transaction to all nodes
-		time.Sleep(10 * time.Second)
+		time.Sleep(1000 * time.Millisecond)
 		// Check if there are any neighbours
 		currentNeighbours := configuration.ReadCurrentNeighbours()
 		currentConnectionsList := configuration.ReadCurrentConnections()

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/gob"
 	"log"
 	"net"
 
@@ -101,12 +100,10 @@ func handleConnection(conn net.Conn) {
 	}
 
 	// Now we can start listening for messages from the Client Node
-	dec := gob.NewDecoder(conn)
 	for {
-		var message Message
-		err := dec.Decode(&message)
-		if err != nil {
-			log.Println("Error decoding:", err)
+		err, message := common.ReceiveMessage(conn)
+		if !err {
+			log.Println("Same issue")
 			break
 		}
 		switch message.Header.Type {
