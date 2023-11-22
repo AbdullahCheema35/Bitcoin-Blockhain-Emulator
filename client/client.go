@@ -49,9 +49,6 @@ func sendArbitraryTransactionToNode(nodeConn types.NodeConnection) (bool, string
 }
 
 func sendArbitraryTransactionToAllNodes(connectionsList ConnectionsList) {
-	// currentConnections := configuration.LockCurrentConnections()
-	// defer configuration.UnlockCurrentConnections(currentConnections)
-
 	for _, nodeConn := range connectionsList.GetNodeConnections() {
 		isMessageSent, transactionData := sendArbitraryTransactionToNode(nodeConn)
 		if !isMessageSent {
@@ -79,6 +76,9 @@ func StartClient() {
 			return
 		}
 		existingNodesList := *existingNodes
+
+		log.Println("Received existing nodes in network. Length:", len(existingNodesList.GetNodes()))
+		log.Println("Existing nodes in the network: ", existingNodesList.GetNodes())
 
 		// Connect to the existing nodes
 		establishConnectionWithExistingNodes(existingNodesList)

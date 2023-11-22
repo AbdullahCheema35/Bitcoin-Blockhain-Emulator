@@ -47,27 +47,32 @@ func main() {
 		// This is the bootstrap node of the network
 		log.Println("This is the bootstrap node")
 		log.Println("Bootstrap node's Server port:", port)
-		log.Println("Bootstrap Node's Bootstrap port :", bootstrapPort)
+		log.Println("Bootstrap Node's Bootstrap port :", bootstrapPort, "\n\n")
 
 		// Start the normal server
+		log.Println("Starting the server")
 		go server.StartServer()
 
 		// Start the bootstrap server
+		log.Println("Starting the bootstrap server")
 		go bootstrap.StartBootstrapServer(bootstrapNode, serverNode)
 
 		// Start the client
+		log.Println("Starting the client")
 		go client.StartClient()
 
 	} else { // if -b is set
 		// This is a regular node
 		log.Println("This is a regular node")
 		log.Println("Regular node's Server port:", port)
-		log.Println("Regular node's Bootstrap port:", bootstrapPort)
+		log.Println("Regular node's Bootstrap port:", bootstrapPort, "\n\n")
 
 		// Start the normal server
+		log.Println("Starting the server")
 		go server.StartServer()
 
 		// Start the client
+		log.Println("Starting the client")
 		go client.StartClient()
 	}
 

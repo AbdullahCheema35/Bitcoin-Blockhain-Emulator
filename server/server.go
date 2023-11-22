@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/common"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
@@ -15,11 +16,8 @@ type (
 )
 
 func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
-	dec := gob.NewDecoder(conn)
-	var message Message
-	err := dec.Decode(&message)
-	if err != nil {
-		log.Println("Error decoding:", err)
+	err, message := common.ReceiveMessage(conn)
+	if !err {
 		return false, types.NodeAddress{}
 	}
 	switch message.Header.Type {
@@ -41,8 +39,10 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) bool {
 	maxNeighbours := configuration.GetMaxNeighbours()
 	currentNeighbours := configuration.LockCurrentNeighbours()
 	currentConnections := configuration.LockCurrentConnections()
-	defer configuration.UnlockCurrentNeighbours(currentNeighbours)
-	defer configuration.UnlockCurrentConnections(currentConnections)
+	defer func() {
+		configuration.UnlockCurrentConnections(currentConnections)
+		configuration.UnlockCurrentNeighbours(currentNeighbours)
+	}()
 
 	if currentNeighbours >= maxNeighbours {
 		log.Println("Maximum neighbours reached")
@@ -53,11 +53,7 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) bool {
 		messageBody := types.ConnectionResponseTypeFailure
 		message := types.NewMessage(messageHeader, messageBody)
 
-		enc := gob.NewEncoder(conn)
-		err := enc.Encode(message)
-		if err != nil {
-			log.Println("Error encoding:", err)
-		}
+		common.SendMessage(conn, message)
 		return false
 	} else {
 		messageType := types.MessageTypeConnectionResponse
@@ -66,12 +62,7 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) bool {
 		messageBody := types.ConnectionResponseTypeSuccess
 		message := types.NewMessage(messageHeader, messageBody)
 
-		enc := gob.NewEncoder(conn)
-		err := enc.Encode(message)
-		if err != nil {
-			log.Println("Error encoding:", err)
-			return false
-		}
+		common.SendMessage(conn, message)
 		// increment the current neighbours
 		currentNeighbours++
 		// Add the client node address to the current connections
@@ -99,7 +90,11 @@ func respondToConnectionRequest(conn net.Conn) bool {
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
+	log.Println("Received a connection request")
+
 	var isConnectionSuccess bool = respondToConnectionRequest(conn)
+
+	log.Println("Connection request handled; Success = ", isConnectionSuccess)
 
 	if !isConnectionSuccess {
 		return

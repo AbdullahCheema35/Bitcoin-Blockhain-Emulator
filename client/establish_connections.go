@@ -55,8 +55,10 @@ func establishConnectionWithExistingNodes(existingNodesList NodesList) {
 	minNeighbours := configuration.GetMinNeighbours()
 	currentNeighbours := configuration.LockCurrentNeighbours()
 	currentConnections := configuration.LockCurrentConnections()
-	defer configuration.UnlockCurrentNeighbours(currentNeighbours)
-	defer configuration.UnlockCurrentConnections(currentConnections)
+	defer func() {
+		configuration.UnlockCurrentConnections(currentConnections)
+		configuration.UnlockCurrentNeighbours(currentNeighbours)
+	}()
 
 	for _, node := range existingNodesList.GetNodes() {
 		if currentNeighbours >= minNeighbours {
@@ -71,8 +73,10 @@ func establishConnectionWithExistingNodes(existingNodesList NodesList) {
 					currentNeighbours++
 					nodeConnection := types.NewNodeConnection(node, conn)
 					currentConnections.AddNodeConnection(nodeConnection)
+					log.Println("Successfully Established connection with", node.GetAddress())
 				}
 			}
 		}
 	}
+	log.Println("Established connections with", currentNeighbours, "neighbours")
 }
