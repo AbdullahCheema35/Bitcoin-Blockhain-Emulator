@@ -40,18 +40,25 @@ func NewNodesList() NodesList {
 }
 
 // AddNode adds a node to the list
-func (nl *NodesList) AddNode(node NodeAddress) {
+func (nl *NodesList) AddNode(node NodeAddress) bool {
+	for _, n := range nl.Nodes {
+		if n.GetAddress() == node.GetAddress() {
+			return false
+		}
+	}
 	nl.Nodes = append(nl.Nodes, node)
+	return true
 }
 
 // RemoveNode removes a node from the list
-func (nl *NodesList) RemoveNode(node NodeAddress) {
+func (nl *NodesList) RemoveNode(node NodeAddress) bool {
 	for i, n := range nl.Nodes {
 		if n == node {
 			nl.Nodes = append(nl.Nodes[:i], nl.Nodes[i+1:]...)
-			break
+			return true
 		}
 	}
+	return false
 }
 
 // GetNodes returns the list of nodes
@@ -80,18 +87,34 @@ func NewNodeConnectionsList() ConnectionsList {
 }
 
 // AddNodeConnection adds a node connection to the list
-func (ncl *ConnectionsList) AddNodeConnection(nodeConnection NodeConnection) {
+func (ncl *ConnectionsList) AddNodeConnection(nodeConnection NodeConnection) bool {
+	for _, n := range ncl.NodeConnections {
+		if n.Node == nodeConnection.Node {
+			return false
+		}
+	}
 	ncl.NodeConnections = append(ncl.NodeConnections, nodeConnection)
+	return true
 }
 
 // RemoveNodeConnection removes a node connection from the list
-func (ncl *ConnectionsList) RemoveNodeConnection(nodeConnection NodeConnection) {
+func (ncl *ConnectionsList) RemoveNodeConnection(nodeConnection NodeConnection) bool {
 	for i, n := range ncl.NodeConnections {
-		if n == nodeConnection {
+		if n.Node == nodeConnection.Node {
 			ncl.NodeConnections = append(ncl.NodeConnections[:i], ncl.NodeConnections[i+1:]...)
-			break
+			return true
 		}
 	}
+	return false
+}
+
+func (ncl *ConnectionsList) ExistsAddress(nodeAddress NodeAddress) bool {
+	for _, n := range ncl.NodeConnections {
+		if n.Node == nodeAddress {
+			return true
+		}
+	}
+	return false
 }
 
 // GetNodeConnections returns the list of node connections

@@ -6,12 +6,14 @@ import (
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/common"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/connection"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
 type (
-	NodeAddress = types.NodeAddress
-	Message     = types.Message
+	NodeAddress     = types.NodeAddress
+	Message         = types.Message
+	ConnectionsList = types.ConnectionsList
 )
 
 func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
@@ -23,28 +25,22 @@ func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
 	case types.MessageTypeConnectionRequest:
 		sender := message.Header.Sender
 		if message.Body != types.ConnectionRequestTypeSuccess {
-			log.Printf("Client %v sent a connection request with non-success type\n", sender.GetAddress())
+			// log.Printf("Client %v sent a connection request with non-success type\n", sender.GetAddress())
 			return false, types.NodeAddress{}
 		}
-		log.Println("Received a connection request from", sender.GetAddress())
+		// log.Println("Received a connection request from", sender.GetAddress())
 		return true, sender
 	default:
-		log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
+		// log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
 		return false, types.NodeAddress{}
 	}
 }
 
-func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) bool {
+func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, bool) {
 	maxNeighbours := configuration.GetMaxNeighbours()
-	currentNeighbours := configuration.LockCurrentNeighbours()
-	currentConnections := configuration.LockCurrentConnections()
-	defer func() {
-		configuration.UnlockCurrentConnections(currentConnections)
-		configuration.UnlockCurrentNeighbours(currentNeighbours)
-	}()
-
-	if currentNeighbours >= maxNeighbours {
-		log.Println("Maximum neighbours reached")
+	currentNeighbours, currentConnections := configuration.ReadCurrentResources("")
+	if currentNeighbours >= maxNeighbours || currentConnections.ExistsAddress(clientNodeAddress) {
+		// log.Println("Maximum neighbours reached or client node already exists in the current connections list")
 
 		messageType := types.MessageTypeConnectionResponse
 		sender := configuration.GetSelfServerAddress()
@@ -53,75 +49,63 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) bool {
 		message := types.NewMessage(messageHeader, messageBody)
 
 		common.SendMessage(conn, message)
-		return false
+		connectionSuccess, connectionClosed := false, false
+		return connectionSuccess, connectionClosed
 	} else {
+		// Add the client node address to the current connections
+		clientNodeConnection := types.NewNodeConnection(clientNodeAddress, conn)
+		_, currentConnections := configuration.LockCurrentResources("")
+		success := connection.AddNewNodeConnection(&currentConnections, clientNodeConnection, "Server")
+		configuration.UnlockCurrentResources(currentConnections, "")
+
 		messageType := types.MessageTypeConnectionResponse
 		sender := configuration.GetSelfServerAddress()
 		messageHeader := types.NewMessageHeader(messageType, sender)
 		messageBody := types.ConnectionResponseTypeSuccess
+		if !success {
+			messageBody = types.ConnectionResponseTypeFailure
+		}
 		message := types.NewMessage(messageHeader, messageBody)
-
 		common.SendMessage(conn, message)
-		// increment the current neighbours
-		currentNeighbours++
-		// Add the client node address to the current connections
-		clientNodeConnection := types.NewNodeConnection(clientNodeAddress, conn)
-		currentConnections.AddNodeConnection(clientNodeConnection)
-		log.Println("Current neighbours:", currentNeighbours)
-		log.Println("Current connections:", currentConnections.GetNodeConnections())
-		return true
+
+		// log.Println("Current neighbours:", len(currentConnections.GetNodeConnections()))
+		// log.Println("Current connections:", currentConnections.GetNodeConnections())
+		connectionSuccess, connectionClosed := success, true
+		return connectionSuccess, connectionClosed
 	}
 }
 
-func respondToConnectionRequest(conn net.Conn) bool {
+func respondToConnectionRequest(conn net.Conn) (bool, bool) {
 	var isRequestSuccess bool
 	var clientNodeAddress NodeAddress
 
 	isRequestSuccess, clientNodeAddress = receiveClientRequest(conn)
 	if !isRequestSuccess {
-		return false
+		log.Println("Unsuccessful connection request received from", clientNodeAddress.GetAddress())
+		return false, false
+	} else {
+		log.Println("Successful connection request received from", clientNodeAddress.GetAddress())
 	}
 
-	isConnectionSuccess := sendResponseToClient(conn, clientNodeAddress)
-	return isConnectionSuccess
+	isConnectionSuccess, isConnectionClosed := sendResponseToClient(conn, clientNodeAddress)
+	if !isConnectionSuccess {
+		log.Println("Unsuccessful connection response sent to", clientNodeAddress.GetAddress())
+	} else {
+		log.Println("Successful connection response sent to", clientNodeAddress.GetAddress())
+	}
+	return isConnectionSuccess, isConnectionClosed
 }
 
 func handleConnection(conn net.Conn) {
-	defer conn.Close()
+	// log.Println("Received a connection request")
 
-	log.Println("Received a connection request")
+	_, isConnectionClosed := respondToConnectionRequest(conn)
 
-	var isConnectionSuccess bool = respondToConnectionRequest(conn)
-
-	log.Println("Connection request handled; Success = ", isConnectionSuccess)
-
-	if !isConnectionSuccess {
-		return
+	if !isConnectionClosed {
+		log.Println("Closing connection. Line 97 of server.go")
+		conn.Close()
 	}
-
 	// Now we can start listening for messages from the Client Node
-	for {
-		err, message := common.ReceiveMessage(conn)
-		if !err {
-			log.Println("Same issue")
-			break
-		}
-		switch message.Header.Type {
-		case types.MessageTypeTransaction:
-			sender := message.Header.Sender
-			// TODO: Handle the transaction
-			// Temp fix
-			transactionData := message.Body.(string)
-			log.Printf("Received transaction %v from %v\n", transactionData, sender.GetAddress())
-			// End of temp fix
-		case types.MessageTypeBlock:
-			sender := message.Header.Sender
-			log.Println("Received a block from", sender.GetAddress())
-		default:
-			sender := message.Header.Sender
-			log.Println("Received an unknown message from", sender.GetAddress())
-		}
-	}
 }
 
 func StartServer() {

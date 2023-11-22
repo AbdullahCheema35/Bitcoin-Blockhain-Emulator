@@ -15,21 +15,19 @@ type NodesList = types.NodesList
 // Handle the list of available nodes
 // nListChan is the write-only channel to send the list of available nodes to handleBootstrapQuery goroutine
 // nAddrChan is the read-only channel to receive the querying node's server address from handleBootstrapQuery goroutine
-func handleAvailableNodesList(nListChan chan<- NodesList, nAddrChan <-chan NodeAddress, sNode NodeAddress) {
+func handleAvailableNodesList(nListChan chan<- NodesList, nAddrChan <-chan NodeAddress) {
 	var availableNodes NodesList = types.NewNodesList()
-
-	// Add the bootstrap node's normal server address to the list of available nodes
-	availableNodes.AddNode(sNode)
 
 	// Loop until the channel is closed
 	for nodeAddress := range nAddrChan {
-		// Send the list of available nodes to the goroutine that handles the query from a node's server to the bootstrap node
-		nListChan <- availableNodes
-
 		// Add the new node's server address to the list of available nodes
+		// If the node's server address already exists in the list, it will be removed and then added again
 		availableNodes.AddNode(nodeAddress)
 
-		log.Println("Added", nodeAddress.GetAddress(), "to the list of available nodes")
+		// log.Println("Added", nodeAddress.GetAddress(), "to the list of available nodes")
+
+		// Send the list of available nodes to the goroutine that handles the query from a node's server to the bootstrap node
+		nListChan <- availableNodes
 	}
 }
 
@@ -50,7 +48,7 @@ func handleBootstrapQuery(conn net.Conn, nListChan <-chan NodesList, nAddrChan c
 		log.Println("Error decoding:", err)
 		return
 	}
-	log.Println("Received bootstrap query from", nodeAddress.GetAddress())
+	// log.Println("Received bootstrap query from", nodeAddress.GetAddress())
 
 	// First, send the querying node's server address to the goroutine that handles the list of available nodes
 	nAddrChan <- nodeAddress
@@ -65,10 +63,10 @@ func handleBootstrapQuery(conn net.Conn, nListChan <-chan NodesList, nAddrChan c
 		return
 	}
 
-	log.Println("Sent list of available nodes to", nodeAddress.GetAddress())
+	// log.Println("Sent list of available nodes to", nodeAddress.GetAddress())
 }
 
-func StartBootstrapServer(bNode NodeAddress, sNode NodeAddress) {
+func StartBootstrapServer(bNode NodeAddress) {
 	bootstrapAddress := bNode.GetAddress()
 	listener, err := net.Listen("tcp", bootstrapAddress)
 	if err != nil {
@@ -77,7 +75,7 @@ func StartBootstrapServer(bNode NodeAddress, sNode NodeAddress) {
 	}
 	defer listener.Close()
 
-	log.Println("Bootstrap node listening on port", bNode.Port)
+	// log.Println("Bootstrap node listening on port", bNode.Port)
 
 	// Create channel for NodesList to be shared between goroutines
 	nodesListChannel := make(chan NodesList)
@@ -88,7 +86,7 @@ func StartBootstrapServer(bNode NodeAddress, sNode NodeAddress) {
 	defer close(nodeAddressChannel)
 
 	// Start goroutine to handle the list of available nodes
-	go handleAvailableNodesList(nodesListChannel, nodeAddressChannel, sNode)
+	go handleAvailableNodesList(nodesListChannel, nodeAddressChannel)
 
 	for {
 		conn, err := listener.Accept()

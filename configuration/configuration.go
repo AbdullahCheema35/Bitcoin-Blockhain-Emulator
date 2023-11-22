@@ -2,17 +2,19 @@ package configuration
 
 import (
 	"encoding/gob"
+	"math/rand"
+	"time"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
 const (
-	minNeighbours uint32 = 2
-	maxNeighbours uint32 = 4
+	minNeighbours int = 2
+	maxNeighbours int = 4
 )
 
 var (
-	currentNeighboursChan  chan uint32                = make(chan uint32, 1)
+	currentNeighboursChan  chan int                   = make(chan int, 1)
 	currentConnectionsChan chan types.ConnectionsList = make(chan types.ConnectionsList, 1)
 )
 
@@ -24,8 +26,9 @@ var (
 )
 
 func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNodeAddress types.NodeAddress, _isSelfBootstrapNode bool) {
-	currentNeighboursChan <- 0
-	currentConnectionsChan <- types.NewNodeConnectionsList()
+	newConnectionsList := types.NewNodeConnectionsList()
+	currentNeighboursChan <- len(newConnectionsList.GetNodeConnections())
+	currentConnectionsChan <- newConnectionsList
 
 	selfServerAddress = _selfServerAddress
 	selfBootstrapAddress = _selfBootstrapAddress
@@ -37,46 +40,45 @@ func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNode
 	gob.Register(types.ConnectionResponseTypeSuccess)
 	// Register type string
 	gob.Register("")
+
+	// Seed random number generator
+	rand.Seed(time.Now().UnixNano())
 }
 
 // Getter functions
-func GetMinNeighbours() uint32 {
+func GetMinNeighbours() int {
 	return minNeighbours
 }
 
-func GetMaxNeighbours() uint32 {
+func GetMaxNeighbours() int {
 	return maxNeighbours
 }
 
 // Reader functions for channels
 // Non blocking read
-func ReadCurrentNeighbours() uint32 {
+func ReadCurrentResources(line string) (int, types.ConnectionsList) {
+	currentNeighbours, currentConnections := LockCurrentResources("configuration.go: 56")
+	UnlockCurrentResources(currentConnections, "configuration.go: 57")
+	return currentNeighbours, currentConnections
+}
+
+func LockCurrentResources(line string) (int, types.ConnectionsList) {
+	// log.Println("Locking current resources", line)
 	currentNeighbours := <-currentNeighboursChan
+	currentConnections := <-currentConnectionsChan
+	// // log.Println("Locking current neighbours; value:", currentNeighbours)
+	// // log.Println("Locking current connections; value:", currentConnections.GetNodeConnections())
+	return currentNeighbours, currentConnections
+}
+
+func UnlockCurrentResources(currentConnections types.ConnectionsList, line string) {
+	currentNeighbours := len(currentConnections.GetNodeConnections())
+	// // log.Println("Unlocking current neighbours; value:", currentNeighbours)
+	// // log.Println("Unlocking current connections; value:", currentConnections.GetNodeConnections())
+	// typecast to int
 	currentNeighboursChan <- currentNeighbours
-	// log.Println("Read current neighbours; value:", currentNeighbours)
-	return currentNeighbours
-}
-
-// Non blocking read
-func ReadCurrentConnections() types.ConnectionsList {
-	currentConnections := <-currentConnectionsChan
 	currentConnectionsChan <- currentConnections
-	// log.Println("Read current connections; value:", currentConnections.GetNodeConnections())
-	return currentConnections
-}
-
-// Critical Section
-func LockCurrentNeighbours() uint32 {
-	currentNeighbours := <-currentNeighboursChan
-	// log.Println("Locking current neighbours; value:", currentNeighbours)
-	return currentNeighbours
-}
-
-// Critical Section
-func LockCurrentConnections() types.ConnectionsList {
-	currentConnections := <-currentConnectionsChan
-	// log.Println("Locking current connections; value:", currentConnections.GetNodeConnections())
-	return currentConnections
+	// log.Println("Unlocked current resources", line)
 }
 
 func GetSelfServerAddress() types.NodeAddress {
@@ -93,17 +95,4 @@ func GetBootstrapNodeAddress() types.NodeAddress {
 
 func GetIsSelfBootstrapNode() bool {
 	return isSelfBootstrapNode
-}
-
-// Setter functions for channels
-// Critical Section
-func UnlockCurrentNeighbours(currentNeighbours uint32) {
-	// log.Println("Unlocking current neighbours; value:", currentNeighbours)
-	currentNeighboursChan <- currentNeighbours
-}
-
-// Critical Section
-func UnlockCurrentConnections(currentConnections types.ConnectionsList) {
-	// log.Println("Unlocking current connections; value:", currentConnections.GetNodeConnections())
-	currentConnectionsChan <- currentConnections
 }

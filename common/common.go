@@ -10,9 +10,14 @@ import (
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
+type (
+	ConnectionsList = types.ConnectionsList
+	NodeConnection  = types.NodeConnection
+)
+
 func SendMessage(conn net.Conn, message types.Message) bool {
 	enc := gob.NewEncoder(conn)
-	err := enc.Encode(message)
+	err := enc.Encode(&message)
 	if err != nil {
 		log.Println("Error encoding:", err)
 		return false
