@@ -42,8 +42,6 @@ func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNode
 	isSelfBootstrapNode = _isSelfBootstrapNode
 
 	// Register types for gob
-	gob.Register(types.ConnectionRequestTypeFailure)
-	gob.Register(types.ConnectionResponseTypeSuccess)
 	gob.Register(types.NodesList{})
 	// Register type string
 	gob.Register("")

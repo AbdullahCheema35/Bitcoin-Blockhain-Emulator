@@ -24,10 +24,6 @@ func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
 	switch message.Header.Type {
 	case types.MessageTypeConnectionRequest:
 		sender := message.Header.Sender
-		if message.Body != types.ConnectionRequestTypeSuccess {
-			// log.Printf("Client %v sent a connection request with non-success type\n", sender.GetAddress())
-			return false, types.NodeAddress{}
-		}
 		// log.Println("Received a connection request from", sender.GetAddress())
 		return true, sender
 	default:
@@ -42,11 +38,11 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 	if currentNeighbours >= maxNeighbours || currentConnections.ExistsAddress(clientNodeAddress) {
 		// log.Println("Maximum neighbours reached or client node already exists in the current connections list")
 
-		messageType := types.MessageTypeConnectionResponse
+		messageType := types.MessageTypeFailure
 		sender := configuration.GetSelfServerAddress()
 		messageHeader := types.NewMessageHeader(messageType, sender)
-		messageBody := types.ConnectionResponseTypeFailure
-		message := types.NewMessage(messageHeader, messageBody)
+		// messageBody := types.MessageTypeFailure
+		message := types.NewMessage(messageHeader, nil)
 
 		common.SendMessage(conn, message)
 		connectionSuccess, connectionClosed := false, false
@@ -58,14 +54,13 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 		success := connection.AddNewNodeConnection(&currentConnections, clientNodeConnection, "Server")
 		configuration.UnlockCurrentConnections(currentConnections, "")
 
-		messageType := types.MessageTypeConnectionResponse
 		sender := configuration.GetSelfServerAddress()
-		messageHeader := types.NewMessageHeader(messageType, sender)
-		messageBody := types.ConnectionResponseTypeSuccess
+		messageType := types.MessageTypeConnectionResponse
 		if !success {
-			messageBody = types.ConnectionResponseTypeFailure
+			messageType = types.MessageTypeFailure
 		}
-		message := types.NewMessage(messageHeader, messageBody)
+		messageHeader := types.NewMessageHeader(messageType, sender)
+		message := types.NewMessage(messageHeader, nil)
 		common.SendMessage(conn, message)
 
 		// log.Println("Current neighbours:", len(currentConnections.GetNodeConnections()))

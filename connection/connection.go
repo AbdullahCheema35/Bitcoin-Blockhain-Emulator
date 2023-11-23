@@ -29,8 +29,7 @@ func sendConnectionRequestToNode(node types.NodeAddress, conn net.Conn) bool {
 	messageType := types.MessageTypeConnectionRequest
 	sender := configuration.GetSelfServerAddress()
 	messageHeader := types.NewMessageHeader(messageType, sender)
-	messageBody := types.ConnectionRequestTypeSuccess
-	message := types.NewMessage(messageHeader, messageBody)
+	message := types.NewMessage(messageHeader, nil)
 
 	isMessageSent := common.SendMessage(conn, message)
 	return isMessageSent
@@ -43,11 +42,6 @@ func receiveConnectionResponseFromNode(conn net.Conn) bool {
 	}
 	switch message.Header.Type {
 	case types.MessageTypeConnectionResponse:
-		if message.Body != types.ConnectionResponseTypeSuccess {
-			// log.Printf("Node %v sent a connection response with non-success type\n", message.Header.Sender.GetAddress())
-			conn.Close()
-			return false
-		}
 		// log.Println("Received a successful connection response from", message.Header.Sender.GetAddress())
 		return true
 	default:
