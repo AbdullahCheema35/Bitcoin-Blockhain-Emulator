@@ -66,6 +66,7 @@ func (nl *NodesList) GetNodes() []NodeAddress {
 	return nl.Nodes
 }
 
+// NodeConnection represents a connection with a node
 type NodeConnection struct {
 	Node NodeAddress
 	Conn net.Conn
@@ -141,11 +142,13 @@ type MessageType uint8
 const (
 	MessageTypeTransaction MessageType = iota
 	MessageTypeBlock
-	MessageTypeRequest
-	MessageTypeResponse
-	MessageTypeConnection
 	MessageTypeConnectionRequest
 	MessageTypeConnectionResponse
+	MessageTypeBootstrapConnectionRequest
+	MessageTypeBootstrapConnectionResponse
+	MessageTypeBootstrapPingRequest
+	MessageTypeBootstrapPingResponse
+	MessageTypeUnknown
 )
 
 type MessageHeader struct {

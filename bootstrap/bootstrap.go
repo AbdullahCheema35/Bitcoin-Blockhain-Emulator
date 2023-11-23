@@ -1,10 +1,11 @@
 package bootstrap
 
 import (
-	"encoding/gob"
 	"log"
 	"net"
 
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/common"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
@@ -12,58 +13,96 @@ type NodeAddress = types.NodeAddress
 
 type NodesList = types.NodesList
 
-// Handle the list of available nodes
-// nListChan is the write-only channel to send the list of available nodes to handleBootstrapQuery goroutine
-// nAddrChan is the read-only channel to receive the querying node's server address from handleBootstrapQuery goroutine
-func handleAvailableNodesList(nListChan chan<- NodesList, nAddrChan <-chan NodeAddress) {
-	var availableNodes NodesList = types.NewNodesList()
+func addUpdateExistingNodesList(node NodeAddress) {
+	_, currentExistingNodesMap := configuration.LockCurrentExistingNodes("")
+	defer func() {
+		configuration.UnlockCurrentExistingNodes(currentExistingNodesMap, "")
+	}()
+	currentExistingNodesMap.AddUpdateBootstrapNode(node)
+}
 
-	// Loop until the channel is closed
-	for nodeAddress := range nAddrChan {
-		// Add the new node's server address to the list of available nodes
-		// If the node's server address already exists in the list, it will be removed and then added again
-		availableNodes.AddNode(nodeAddress)
+func getExistingNodesList() NodesList {
+	_, currentExistingNodesMap := configuration.LockCurrentExistingNodes("")
+	defer func() {
+		configuration.UnlockCurrentExistingNodes(currentExistingNodesMap, "")
+	}()
+	maxDelay := configuration.GetMaxSecondsPingDelay()
+	existingNodesList := currentExistingNodesMap.GetRecentBootstrapNodes(maxDelay)
+	return existingNodesList
+}
 
-		// log.Println("Added", nodeAddress.GetAddress(), "to the list of available nodes")
-
-		// Send the list of available nodes to the goroutine that handles the query from a node's server to the bootstrap node
-		nListChan <- availableNodes
+func createMessageHeader(msgType types.MessageType) types.MessageHeader {
+	sender := configuration.GetSelfBootstrapAddress()
+	switch msgType {
+	case types.MessageTypeBootstrapConnectionRequest:
+		// log.Println("Received bootstrap connection request")
+		msgType = types.MessageTypeBootstrapConnectionResponse
+	case types.MessageTypeBootstrapPingRequest:
+		// log.Println("Received bootstrap ping request")
+		msgType = types.MessageTypeBootstrapPingResponse
+	default:
+		// log.Println("Invalid message type")
+		msgType = types.MessageTypeUnknown
 	}
+	return types.MessageHeader{
+		Type:   msgType,
+		Sender: sender,
+	}
+}
+
+func handleBootstrapRequest(msg types.Message) (types.MessageType, NodeAddress) {
+	switch msg.Header.Type {
+	case types.MessageTypeBootstrapConnectionRequest:
+		sender := msg.Header.Sender
+		// log.Println("Received bootstrap connection request from", sender.GetAddress())
+		return types.MessageTypeBootstrapConnectionRequest, sender
+	case types.MessageTypeBootstrapPingRequest:
+		sender := msg.Header.Sender
+		// log.Println("Received bootstrap ping request from", sender.GetAddress())
+		return types.MessageTypeBootstrapPingRequest, sender
+	default:
+		// log.Println("Invalid message type")
+		return types.MessageTypeUnknown, NodeAddress{}
+	}
+}
+
+func respondToBootstrapRequest(conn net.Conn, msgType types.MessageType, currentExistingNodesList interface{}) {
+	// log.Println("Sending bootstrap connection response")
+	header := createMessageHeader(msgType)
+	body := currentExistingNodesList
+	msg := types.NewMessage(header, body)
+	common.SendMessage(conn, msg)
 }
 
 // Handle the query from a node's server to the bootstrap node
 // conn is the connection to the querying node's server
 // nListChan is the read-only channel to receive the list of available nodes from handleAvailableNodesList goroutine
 // nAddrChan is the write-only channel to send the querying node's server address to handleAvailableNodesList goroutine
-func handleBootstrapQuery(conn net.Conn, nListChan <-chan NodesList, nAddrChan chan<- NodeAddress) {
+func handleBootstrapQuery(conn net.Conn) {
 	defer conn.Close()
 
-	dec := gob.NewDecoder(conn)
-	enc := gob.NewEncoder(conn)
-
 	// Receive the NodeAddress of the node's server that is querying to the bootstrap node
-	var nodeAddress NodeAddress
-	err := dec.Decode(&nodeAddress)
-	if err != nil {
-		log.Println("Error decoding:", err)
+	msgRcvSuccessfully, msg := common.ReceiveMessage(conn)
+	if !msgRcvSuccessfully { // Failed to receive message from the querying node, i.e., the connection is broken
+		// log.Println("Error receiving message from querying node")
 		return
 	}
-	// log.Println("Received bootstrap query from", nodeAddress.GetAddress())
-
-	// First, send the querying node's server address to the goroutine that handles the list of available nodes
-	nAddrChan <- nodeAddress
-
-	// Then, receive the list of available nodes from the goroutine that handles the list of available nodes
-	availableNodes := <-nListChan
-
-	// Send the list of available nodes to the querying node
-	err = enc.Encode(availableNodes)
-	if err != nil {
-		log.Println("Error encoding:", err)
-		return
+	msgType, sender := handleBootstrapRequest(msg)
+	switch msgType {
+	case types.MessageTypeBootstrapConnectionRequest:
+		// log.Println("Received bootstrap connection request")
+		addUpdateExistingNodesList(sender)
+		currentExistingNodesList := getExistingNodesList()
+		respondToBootstrapRequest(conn, msgType, currentExistingNodesList)
+	case types.MessageTypeBootstrapPingRequest:
+		// log.Println("Received bootstrap ping request")
+		addUpdateExistingNodesList(sender)
+		respondToBootstrapRequest(conn, msgType, nil)
+	default:
+		// log.Println("Invalid message type")
+		msgType = types.MessageTypeUnknown
+		respondToBootstrapRequest(conn, msgType, nil)
 	}
-
-	// log.Println("Sent list of available nodes to", nodeAddress.GetAddress())
 }
 
 func StartBootstrapServer(bNode NodeAddress) {
@@ -75,18 +114,7 @@ func StartBootstrapServer(bNode NodeAddress) {
 	}
 	defer listener.Close()
 
-	// log.Println("Bootstrap node listening on port", bNode.Port)
-
-	// Create channel for NodesList to be shared between goroutines
-	nodesListChannel := make(chan NodesList)
-	defer close(nodesListChannel)
-
-	// Create channel for NodeAddress to be shared between goroutines
-	nodeAddressChannel := make(chan NodeAddress)
-	defer close(nodeAddressChannel)
-
-	// Start goroutine to handle the list of available nodes
-	go handleAvailableNodesList(nodesListChannel, nodeAddressChannel)
+	log.Println("Bootstrap node listening on port", bNode.Port)
 
 	for {
 		conn, err := listener.Accept()
@@ -94,6 +122,6 @@ func StartBootstrapServer(bNode NodeAddress) {
 			log.Println("Error accepting connection:", err)
 			continue
 		}
-		go handleBootstrapQuery(conn, nodesListChannel, nodeAddressChannel)
+		go handleBootstrapQuery(conn)
 	}
 }

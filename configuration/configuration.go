@@ -9,13 +9,15 @@ import (
 )
 
 const (
-	minNeighbours int = 2
-	maxNeighbours int = 4
+	minNeighbours       int = 2
+	maxNeighbours       int = 4
+	maxSecondsPingDelay int = 12
 )
 
 var (
-	currentNeighboursChan  chan int                   = make(chan int, 1)
-	currentConnectionsChan chan types.ConnectionsList = make(chan types.ConnectionsList, 1)
+	currentConnectionsChan   chan types.ConnectionsList   = make(chan types.ConnectionsList, 1)
+	currentExistingNodesChan chan types.BootstrapNodesMap = make(chan types.BootstrapNodesMap, 1)
+	bootstrapLockChan        chan bool                    = make(chan bool, 1)
 )
 
 var (
@@ -23,12 +25,16 @@ var (
 	selfBootstrapAddress types.NodeAddress
 	bootstrapNodeAddress types.NodeAddress
 	isSelfBootstrapNode  bool
+	// connectedWithBootstrap bool
 )
 
 func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNodeAddress types.NodeAddress, _isSelfBootstrapNode bool) {
 	newConnectionsList := types.NewNodeConnectionsList()
-	currentNeighboursChan <- len(newConnectionsList.GetNodeConnections())
+	newExistingNodesMap := types.NewBootstrapNodesMap()
 	currentConnectionsChan <- newConnectionsList
+	currentExistingNodesChan <- newExistingNodesMap
+	// connectedWithBootstrap = false
+	bootstrapLockChan <- false
 
 	selfServerAddress = _selfServerAddress
 	selfBootstrapAddress = _selfBootstrapAddress
@@ -38,6 +44,7 @@ func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNode
 	// Register types for gob
 	gob.Register(types.ConnectionRequestTypeFailure)
 	gob.Register(types.ConnectionResponseTypeSuccess)
+	gob.Register(types.NodesList{})
 	// Register type string
 	gob.Register("")
 
@@ -54,30 +61,65 @@ func GetMaxNeighbours() int {
 	return maxNeighbours
 }
 
+func GetMaxSecondsPingDelay() int {
+	return maxSecondsPingDelay
+}
+
+func LockBootstrapChan() bool {
+	return <-bootstrapLockChan
+}
+
+func UnlockBootstrapChan(connected bool) {
+	bootstrapLockChan <- connected
+}
+
 // Reader functions for channels
 // Non blocking read
-func ReadCurrentResources(line string) (int, types.ConnectionsList) {
-	currentNeighbours, currentConnections := LockCurrentResources("configuration.go: 56")
-	UnlockCurrentResources(currentConnections, "configuration.go: 57")
+func ReadCurrentConnections(line string) (int, types.ConnectionsList) {
+	currentNeighbours, currentConnections := LockCurrentConnections("configuration.go: 56")
+	UnlockCurrentConnections(currentConnections, "configuration.go: 57")
 	return currentNeighbours, currentConnections
 }
 
-func LockCurrentResources(line string) (int, types.ConnectionsList) {
+func ReadCurrentExistingNodes(line string) (int, types.BootstrapNodesMap) {
+	currentNeighbours, currentExistingNodes := LockCurrentExistingNodes("configuration.go: 62")
+	UnlockCurrentExistingNodes(currentExistingNodes, "configuration.go: 63")
+	return currentNeighbours, currentExistingNodes
+}
+
+// Reader functions for channels
+// Blocking read
+func LockCurrentConnections(line string) (int, types.ConnectionsList) {
 	// log.Println("Locking current resources", line)
-	currentNeighbours := <-currentNeighboursChan
 	currentConnections := <-currentConnectionsChan
+	currentNeighbours := len(currentConnections.GetNodeConnections())
 	// // log.Println("Locking current neighbours; value:", currentNeighbours)
 	// // log.Println("Locking current connections; value:", currentConnections.GetNodeConnections())
 	return currentNeighbours, currentConnections
 }
 
-func UnlockCurrentResources(currentConnections types.ConnectionsList, line string) {
-	currentNeighbours := len(currentConnections.GetNodeConnections())
+func LockCurrentExistingNodes(line string) (int, types.BootstrapNodesMap) {
+	// log.Println("Locking current resources", line)
+	currentExistingNodes := <-currentExistingNodesChan
+	currentNeighbours := currentExistingNodes.GetLength()
+	// // log.Println("Locking current neighbours; value:", currentNeighbours)
+	// // log.Println("Locking current connections; value:", currentConnections.GetNodeConnections())
+	return currentNeighbours, currentExistingNodes
+}
+
+// Writer functions for channels
+// Blocking write (if the channel is full, i.e., above the buffer size)
+func UnlockCurrentConnections(currentConnections types.ConnectionsList, line string) {
 	// // log.Println("Unlocking current neighbours; value:", currentNeighbours)
 	// // log.Println("Unlocking current connections; value:", currentConnections.GetNodeConnections())
-	// typecast to int
-	currentNeighboursChan <- currentNeighbours
 	currentConnectionsChan <- currentConnections
+	// log.Println("Unlocked current resources", line)
+}
+
+func UnlockCurrentExistingNodes(currentExistingNodes types.BootstrapNodesMap, line string) {
+	// // log.Println("Unlocking current neighbours; value:", currentNeighbours)
+	// // log.Println("Unlocking current connections; value:", currentConnections.GetNodeConnections())
+	currentExistingNodesChan <- currentExistingNodes
 	// log.Println("Unlocked current resources", line)
 }
 

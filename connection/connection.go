@@ -45,12 +45,14 @@ func receiveConnectionResponseFromNode(conn net.Conn) bool {
 	case types.MessageTypeConnectionResponse:
 		if message.Body != types.ConnectionResponseTypeSuccess {
 			// log.Printf("Node %v sent a connection response with non-success type\n", message.Header.Sender.GetAddress())
+			conn.Close()
 			return false
 		}
 		// log.Println("Received a successful connection response from", message.Header.Sender.GetAddress())
 		return true
 	default:
 		// log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
+		conn.Close()
 		return false
 	}
 }

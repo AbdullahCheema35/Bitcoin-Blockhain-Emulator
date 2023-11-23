@@ -38,7 +38,7 @@ func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
 
 func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, bool) {
 	maxNeighbours := configuration.GetMaxNeighbours()
-	currentNeighbours, currentConnections := configuration.ReadCurrentResources("")
+	currentNeighbours, currentConnections := configuration.ReadCurrentConnections("")
 	if currentNeighbours >= maxNeighbours || currentConnections.ExistsAddress(clientNodeAddress) {
 		// log.Println("Maximum neighbours reached or client node already exists in the current connections list")
 
@@ -54,9 +54,9 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 	} else {
 		// Add the client node address to the current connections
 		clientNodeConnection := types.NewNodeConnection(clientNodeAddress, conn)
-		_, currentConnections := configuration.LockCurrentResources("")
+		_, currentConnections := configuration.LockCurrentConnections("")
 		success := connection.AddNewNodeConnection(&currentConnections, clientNodeConnection, "Server")
-		configuration.UnlockCurrentResources(currentConnections, "")
+		configuration.UnlockCurrentConnections(currentConnections, "")
 
 		messageType := types.MessageTypeConnectionResponse
 		sender := configuration.GetSelfServerAddress()

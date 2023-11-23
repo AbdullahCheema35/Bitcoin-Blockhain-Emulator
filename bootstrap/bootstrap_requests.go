@@ -1,63 +1,113 @@
 package bootstrap
 
 import (
-	"encoding/gob"
 	"log"
 	"net"
-	"time"
+
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/common"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
-func getExistingNodesFromBootstrapNode(selfNode NodeAddress, conn net.Conn) *NodesList {
+func getExistingNodesFromBootstrapNode(selfNode NodeAddress, conn net.Conn) interface{} {
+	// create message header
+	msgHeader := types.MessageHeader{
+		Type:   types.MessageTypeBootstrapConnectionRequest,
+		Sender: selfNode,
+	}
+
 	// Send the node's server address to the bootstrap node
-	enc := gob.NewEncoder(conn)
-	err := enc.Encode(selfNode)
-	if err != nil {
-		log.Println("Error encoding:", err)
+	message := types.NewMessage(msgHeader, nil)
+	success := common.SendMessage(conn, message)
+
+	if !success { // If the message was not sent successfully, return nil
 		return nil
 	}
 
 	// Receive the list of available nodes from the bootstrap node
-	dec := gob.NewDecoder(conn)
-	var existingNodes NodesList
-	err = dec.Decode(&existingNodes)
-	if err != nil {
-		log.Println("Error decoding:", err)
+	success, msg := common.ReceiveMessage(conn)
+	if !success { // If the message was not received successfully, return nil
 		return nil
 	}
 
-	// filter the list of available nodes to remove the node's own server address
-	existingNodes.RemoveNode(selfNode)
-
-	return &existingNodes
+	// Handle the received message
+	switch msg.Header.Type {
+	case types.MessageTypeBootstrapConnectionResponse:
+		// log.Println("Received bootstrap connection response")
+		existingNodesList := msg.Body.(types.NodesList)
+		existingNodesList.RemoveNode(selfNode)
+		return existingNodesList
+	default:
+		log.Println("Invalid message type")
+		return nil
+	}
 }
 
 // Establishes a connection to the bootstrap server at the given address and returns the pointer to the connection
 func connectToBootstrapNode(bootstrapNode NodeAddress) net.Conn {
 	bootstrapAddress := bootstrapNode.GetAddress()
-	for seconds := 1; seconds < 100; seconds *= 2 {
-		conn, err := net.DialTimeout("tcp", bootstrapAddress, 1000*time.Millisecond)
-		if err != nil {
-			// log.Println("Couldn't connect to bootstrap node:", err, "Retrying in ", seconds, "seconds")
-			// Wait for a while before retrying
-			time.Sleep(time.Duration(seconds) * time.Second)
-		} else {
-			// log.Println("Connected to bootstrap node")
-			return conn
-		}
+	conn, err := net.Dial("tcp", bootstrapAddress)
+	if err != nil {
+		log.Println("Couldn't connect to bootstrap node:", err)
+		return nil
+	} else {
+		// log.Println("Connected to bootstrap node")
+		return conn
 	}
-	return nil
 }
 
 // returns the list of available nodes in the network from the bootstrap node
-func GetExistingNodesInNetwork(bootstrapNode NodeAddress, selfNode NodeAddress) *NodesList {
+func GetExistingNodesInNetwork(bootstrapNode NodeAddress, selfNode NodeAddress) interface{} {
 	// Connect to the bootstrap node
-	var bootstrapConn net.Conn = connectToBootstrapNode(bootstrapNode)
+	bootstrapConn := connectToBootstrapNode(bootstrapNode)
 	if bootstrapConn == nil {
 		return nil
 	}
 	defer bootstrapConn.Close()
 
 	// Get the list of available nodes from the bootstrap node
-	var existingNodes *NodesList = getExistingNodesFromBootstrapNode(selfNode, bootstrapConn)
-	return existingNodes
+	existingNodesList := getExistingNodesFromBootstrapNode(selfNode, bootstrapConn)
+	return existingNodesList
+}
+
+func PingBootstrapServer(bootstrapNode NodeAddress) bool {
+	// Connect to the bootstrap node
+	bootstrapConn := connectToBootstrapNode(bootstrapNode)
+	if bootstrapConn == nil {
+		return false
+	}
+	defer bootstrapConn.Close()
+
+	// Get self node address
+	sender := configuration.GetSelfServerAddress()
+
+	// create message header
+	msgHeader := types.MessageHeader{
+		Type:   types.MessageTypeBootstrapPingRequest,
+		Sender: sender,
+	}
+
+	// Send the node's server address to the bootstrap node
+	message := types.NewMessage(msgHeader, nil)
+	success := common.SendMessage(bootstrapConn, message)
+
+	if !success { // If the message was not sent successfully, return nil
+		return false
+	}
+
+	// Receive the list of available nodes from the bootstrap node
+	success, msg := common.ReceiveMessage(bootstrapConn)
+	if !success { // If the message was not received successfully, return nil
+		return false
+	}
+
+	// Handle the received message
+	switch msg.Header.Type {
+	case types.MessageTypeBootstrapPingResponse:
+		// log.Println("Received bootstrap connection response")
+		return true
+	default:
+		log.Println("Invalid message type")
+		return false
+	}
 }

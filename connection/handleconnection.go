@@ -26,64 +26,71 @@ func AddNewNodeConnection(ncl *ConnectionsList, nc NodeConnection, str string) b
 }
 
 // Establishes connections with the nodes at the given addresses and returns the pointer to the connections' list
-func establishConnectionWithNodes_SafeMode(existingNodesList *NodesList) {
+func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 	minNeighbours := configuration.GetMinNeighbours()
 
 	for _, node := range existingNodesList.GetNodes() {
 		// log.Println("Establishing connection with node", i+1, "at", node.GetAddress())
-		// Generate a random number between 0 and 1000
-		randomTime := rand.Intn(1001)
-		// Sleep for randomTime milliseconds
-		time.Sleep(time.Duration(randomTime) * time.Millisecond)
-
-		currentNeighbours, currentConnections := configuration.ReadCurrentResources("handleconnection.go: 29")
+		currentNeighbours, currentConnections := configuration.ReadCurrentConnections("handleconnection.go: 29")
 		if currentNeighbours >= minNeighbours {
 			// log.Println("No need to add more connections. Currently established connections are", len(currentConnections.GetNodeConnections()), "neighbours")
 			break
 		}
 
+		// Generate a random number between 0 and 1000
+		randomTime := rand.Intn(1001)
+		// Sleep for randomTime milliseconds
+		time.Sleep(time.Duration(randomTime) * time.Millisecond)
+
+		// Again check if the number of neighbours is greater than or equal to the minimum number of neighbours
+		currentNeighbours, currentConnections = configuration.ReadCurrentConnections("handleconnection.go: 29")
+		if currentNeighbours >= minNeighbours {
+			// log.Println("No need to add more connections. Currently established connections are", len(currentConnections.GetNodeConnections()), "neighbours")
+			break
+		}
+
+		// Check if this node is already connected
 		alreadyConnected := currentConnections.ExistsAddress(node)
 
 		if alreadyConnected {
 			continue
 		}
 
-		successInProcess := false
 		// First establish a connection with the node
 		var conn net.Conn = connectToNode(node)
 		// log.Println("Line 56: handleConnection.go")
-		if conn != nil {
-			// Send a connection request to the node
-			isConnectionRequestSuccess := sendConnectionRequestToNode(node, conn)
-			// log.Println("Line 60: handleConnection.go")
-			if isConnectionRequestSuccess {
-				// Receive a connection response from the node
-				// log.Println("Line 63: handleConnection.go")
-				isConnectionResponseSuccess := receiveConnectionResponseFromNode(conn)
-				// log.Println("Line 65: handleConnection.go")
-				if isConnectionResponseSuccess { // Successfully established connection with the node
-					// Add the node to the list of current neighbours
-					// log.Println("Line 68: HandleConnection.go", node.GetAddress())
-					nodeConnection := types.NewNodeConnection(node, conn)
-					// log.Println("Line 70: HandleConnection.go", node.GetAddress())
-					_, currentConnections := configuration.LockCurrentResources("Line 68: HandleCOnnecuin.go Add new node")
-					returnVal := AddNewNodeConnection(&currentConnections, nodeConnection, "handleconnection")
-					configuration.UnlockCurrentResources(currentConnections, "Line 70: UblockNode HandleCOnnecuin.go")
-
-					if returnVal {
-						successInProcess = true
-					}
-					// log.Println("Line 72: HandleConnection.go", node.GetAddress())
-				}
-				// log.Println("Line 74: HandleConnection.go", node.GetAddress())
-			}
-			// log.Println("Line 76: HandleConnection.go", node.GetAddress())
-		}
-		if successInProcess {
-			log.Println("ECWN_SM: Successfully established connection with", node.GetAddress())
-		} else {
+		if conn == nil {
+			// log.Println("Line 58: handleConnection.go")
 			log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
+			continue
 		}
+		isConnectionRequestSuccess := sendConnectionRequestToNode(node, conn)
+		// log.Println("Line 59: handleConnection.go")
+		if !isConnectionRequestSuccess {
+			log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
+			// Close the connection if the connection is not already closed
+			if conn != nil {
+				conn.Close()
+			}
+			continue
+		}
+		isConnectionResponseSuccess := receiveConnectionResponseFromNode(conn)
+		if !isConnectionResponseSuccess {
+			log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
+			if conn != nil {
+				conn.Close()
+			}
+			continue
+		}
+		nodeConnection := types.NewNodeConnection(node, conn)
+		_, currentConnections = configuration.LockCurrentConnections("Line 68: HandleCOnnecuin.go Add new node")
+		returnVal := AddNewNodeConnection(&currentConnections, nodeConnection, "handleconnection")
+		configuration.UnlockCurrentConnections(currentConnections, "Line 70: UblockNode HandleCOnnecuin.go")
+		if !returnVal {
+			log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
+			continue
+		}
+		log.Println("ECWN_SM: Successfully established connection with", node.GetAddress())
 		// log.Println("Line 78: HandleConnection.go", node.GetAddress())
 	}
 }
@@ -91,7 +98,7 @@ func establishConnectionWithNodes_SafeMode(existingNodesList *NodesList) {
 func ConnectWithNetwork_SafeMode() {
 	minNeighbours := configuration.GetMinNeighbours()
 	// Read Current Resources
-	currentNeighbours, currentConnections := configuration.ReadCurrentResources("handleconnection.go: 76")
+	currentNeighbours, currentConnections := configuration.ReadCurrentConnections("handleconnection.go: 76")
 	if currentNeighbours >= minNeighbours {
 		log.Println("No need to add more connections. Currently established connections are", len(currentConnections.GetNodeConnections()), "neighbours")
 		return
@@ -99,25 +106,28 @@ func ConnectWithNetwork_SafeMode() {
 	serverNode := configuration.GetSelfServerAddress()
 	bootstrapNode := configuration.GetBootstrapNodeAddress()
 	// Get the list of existing nodes in the network from the bootstrap node
-	var existingNodes *NodesList = bootstrap.GetExistingNodesInNetwork(bootstrapNode, serverNode)
+	existingNodes := bootstrap.GetExistingNodesInNetwork(bootstrapNode, serverNode)
 	if existingNodes == nil {
-		log.Println("Could not get the list of existing nodes in the network. Exiting Client...")
+		configuration.LockBootstrapChan()
+		configuration.UnlockBootstrapChan(false)
+		log.Println("Could not get the list of existing nodes in the network. Exiting...")
 		return
 	}
+	existingNodesList := existingNodes.(NodesList)
 
 	// log.Println("Received existing nodes in network. Length:", len(existingNodes.GetNodes()))
-	log.Println("Existing nodes in the network: ", len(existingNodes.GetNodes()), existingNodes.GetNodes())
+	log.Println("Existing nodes in the network: ", len(existingNodesList.GetNodes()), existingNodesList.GetNodes())
 
 	// Connect to the existing nodes
-	establishConnectionWithNodes_SafeMode(existingNodes)
+	establishConnectionWithNodes_SafeMode(existingNodesList)
 }
 
 func HandleLostNodeConnection(nc NodeConnection) {
 	// Lock Resources
-	_, currentConnections := configuration.LockCurrentResources("handleconnection.go: 99")
+	_, currentConnections := configuration.LockCurrentConnections("handleconnection.go: 99")
 	success := currentConnections.RemoveNodeConnection(nc)
 	// Unlock Resources
-	configuration.UnlockCurrentResources(currentConnections, "handleconnection.go: 102")
+	configuration.UnlockCurrentConnections(currentConnections, "handleconnection.go: 102")
 	if success {
 		log.Println("Removed broken node connection with ", nc.Node.GetAddress())
 	} else {
