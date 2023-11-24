@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/common"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/connection"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
@@ -17,7 +17,7 @@ type (
 )
 
 func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
-	err, message := common.ReceiveMessage(conn)
+	err, message := comm.ReceiveMessage(conn)
 	if !err {
 		return false, types.NodeAddress{}
 	}
@@ -44,7 +44,7 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 		// messageBody := types.MessageTypeFailure
 		message := types.NewMessage(messageHeader, nil)
 
-		common.SendMessage(conn, message)
+		comm.SendMessage(conn, message)
 		connectionSuccess, connectionClosed := false, false
 		return connectionSuccess, connectionClosed
 	} else {
@@ -61,7 +61,7 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 		}
 		messageHeader := types.NewMessageHeader(messageType, sender)
 		message := types.NewMessage(messageHeader, nil)
-		common.SendMessage(conn, message)
+		comm.SendMessage(conn, message)
 
 		// log.Println("Current neighbours:", len(currentConnections.GetNodeConnections()))
 		// log.Println("Current connections:", currentConnections.GetNodeConnections())

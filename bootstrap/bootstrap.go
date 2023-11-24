@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/common"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
@@ -71,7 +71,7 @@ func respondToBootstrapRequest(conn net.Conn, msgType types.MessageType, current
 	header := createMessageHeader(msgType)
 	body := currentExistingNodesList
 	msg := types.NewMessage(header, body)
-	common.SendMessage(conn, msg)
+	comm.SendMessage(conn, msg)
 }
 
 // Handle the query from a node's server to the bootstrap node
@@ -82,7 +82,7 @@ func handleBootstrapQuery(conn net.Conn) {
 	defer conn.Close()
 
 	// Receive the NodeAddress of the node's server that is querying to the bootstrap node
-	msgRcvSuccessfully, msg := common.ReceiveMessage(conn)
+	msgRcvSuccessfully, msg := comm.ReceiveMessage(conn)
 	if !msgRcvSuccessfully { // Failed to receive message from the querying node, i.e., the connection is broken
 		// log.Println("Error receiving message from querying node")
 		return

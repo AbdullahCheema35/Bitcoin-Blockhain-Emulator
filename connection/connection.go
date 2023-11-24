@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/common"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
@@ -31,12 +31,12 @@ func sendConnectionRequestToNode(node types.NodeAddress, conn net.Conn) bool {
 	messageHeader := types.NewMessageHeader(messageType, sender)
 	message := types.NewMessage(messageHeader, nil)
 
-	isMessageSent := common.SendMessage(conn, message)
+	isMessageSent := comm.SendMessage(conn, message)
 	return isMessageSent
 }
 
 func receiveConnectionResponseFromNode(conn net.Conn) bool {
-	isMessageReceived, message := common.ReceiveMessage(conn)
+	isMessageReceived, message := comm.ReceiveMessage(conn)
 	if !isMessageReceived {
 		return false
 	}
@@ -57,7 +57,7 @@ func listenForMessages(nc types.NodeConnection) {
 	log.Println("Listening for messages from", nc.Node.GetAddress())
 
 	for {
-		err, message := common.ReceiveMessage(conn)
+		err, message := comm.ReceiveMessage(conn)
 		if !err {
 			// It means connection is broken/lost
 			conn.Close()

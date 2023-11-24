@@ -1,6 +1,4 @@
-// Some common functions
-
-package common
+package comm
 
 import (
 	"encoding/gob"
@@ -8,11 +6,6 @@ import (
 	"net"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
-)
-
-type (
-	ConnectionsList = types.ConnectionsList
-	NodeConnection  = types.NodeConnection
 )
 
 func SendMessage(conn net.Conn, message types.Message) bool {
@@ -31,7 +24,7 @@ func ReceiveMessage(conn net.Conn) (bool, types.Message) {
 	err := dec.Decode(&message)
 	if err != nil {
 		log.Println("Error decoding:", err)
-		return false, types.Message{}
+		return false, message
 	}
 	return true, message
 }

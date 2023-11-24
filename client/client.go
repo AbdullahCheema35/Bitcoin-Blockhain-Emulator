@@ -8,7 +8,6 @@ import (
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/bootstrap"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/connection"
-	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/propagation"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
@@ -62,6 +61,6 @@ func StartClient() {
 		// Log the current connections list
 		log.Println("Current connections list:", currentConnectionsList.GetNodeConnections())
 		// Send arbitrary transaction to all nodes
-		propagation.SendArbitraryTransactionToAllNodes(currentConnectionsList)
+		// propagation.SendArbitraryTransactionToAllNodes(currentConnectionsList)
 	}
 }
