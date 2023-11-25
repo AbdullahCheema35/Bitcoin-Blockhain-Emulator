@@ -17,10 +17,10 @@ type MerkleTree struct {
 }
 
 // MerklePathElement represents a hash value and its order in the Merkle Path
-type MerklePathElement struct {
-	hash                    string
-	useFirstInConcatenation bool
-}
+// type MerklePathElement struct {
+// 	hash                    string
+// 	useFirstInConcatenation bool
+// }
 
 // NewMerkleTree constructs a Merkle Tree from a list of transactions
 func NewMerkleTree(transactions TransactionList) MerkleTree {
@@ -51,34 +51,34 @@ func (tree MerkleTree) MerkleRoot() string {
 }
 
 // MerklePathForLeaf returns the Merkle Path for a specific leaf in the tree
-func (tree MerkleTree) MerklePathForLeaf(leafIndex int) MerklePath {
-	var merklePath MerklePath
-	i := leafIndex
-	for _, row := range tree.rows[:len(tree.rows)-1] {
-		sibling, useFirstInConcatenation := tree.evaluateSibling(row, i)
-		merklePathElement := MerklePathElement{
-			hash:                    row[sibling],
-			useFirstInConcatenation: useFirstInConcatenation,
-		}
-		merklePath = append(merklePath, merklePathElement)
-		i = i / 2
-	}
-	return merklePath
-}
+// func (tree MerkleTree) MerklePathForLeaf(leafIndex int) MerklePath {
+// 	var merklePath MerklePath
+// 	i := leafIndex
+// 	for _, row := range tree.rows[:len(tree.rows)-1] {
+// 		sibling, useFirstInConcatenation := tree.evaluateSibling(row, i)
+// 		merklePathElement := MerklePathElement{
+// 			hash:                    row[sibling],
+// 			useFirstInConcatenation: useFirstInConcatenation,
+// 		}
+// 		merklePath = append(merklePath, merklePathElement)
+// 		i = i / 2
+// 	}
+// 	return merklePath
+// }
 
-func (tree MerkleTree) evaluateSibling(row Row, myIndex int) (siblingIndex int, useFirstInConcatenation bool) {
-	if myIndex%2 == 1 {
-		siblingIndex = myIndex - 1
-		useFirstInConcatenation = true
-	} else if myIndex+1 <= len(row)-1 {
-		siblingIndex = myIndex + 1
-		useFirstInConcatenation = false
-	} else {
-		siblingIndex = myIndex
-		useFirstInConcatenation = true
-	}
-	return
-}
+// func (tree MerkleTree) evaluateSibling(row Row, myIndex int) (siblingIndex int, useFirstInConcatenation bool) {
+// 	if myIndex%2 == 1 {
+// 		siblingIndex = myIndex - 1
+// 		useFirstInConcatenation = true
+// 	} else if myIndex+1 <= len(row)-1 {
+// 		siblingIndex = myIndex + 1
+// 		useFirstInConcatenation = false
+// 	} else {
+// 		siblingIndex = myIndex
+// 		useFirstInConcatenation = true
+// 	}
+// 	return
+// }
 
 func (tree MerkleTree) adjustRows() {
 	for level := len(tree.rows) - 1; level >= 0; level-- {
@@ -118,7 +118,7 @@ func (tree MerkleTree) isComplete() bool {
 }
 
 // MerklePath represents the path in the Merkle Tree
-type MerklePath []MerklePathElement
+//type MerklePath []MerklePathElement
 
 func (tree MerkleTree) Display() {
 	fmt.Println("Merkle Tree:")
