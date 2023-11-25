@@ -28,6 +28,12 @@ var (
 	// connectedWithBootstrap bool
 )
 
+var (
+	maxTransactionsInBlock int                   = 5
+	minTransactionsInBlock int                   = 2
+	transactionPool        types.TransactionList = types.NewTransactionList()
+)
+
 func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNodeAddress types.NodeAddress, _isSelfBootstrapNode bool) {
 	newConnectionsList := types.NewNodeConnectionsList()
 	newExistingNodesMap := types.NewBootstrapNodesMap()
@@ -135,4 +141,32 @@ func GetBootstrapNodeAddress() types.NodeAddress {
 
 func GetIsSelfBootstrapNode() bool {
 	return isSelfBootstrapNode
+}
+
+func GetMaxTransactionsInBlock() int {
+	return maxTransactionsInBlock
+}
+
+func GetMinTransactionsInBlock() int {
+	return minTransactionsInBlock
+}
+
+func GetTransactionPool() types.TransactionList {
+	return transactionPool
+}
+
+func SetTransactionPool(newTransactionPool types.TransactionList) {
+	transactionPool = newTransactionPool
+}
+
+func AddTransactionToPool(transaction types.Transaction) bool {
+	return transactionPool.AddTransaction(transaction)
+}
+
+func RemoveTransactionFromPool(transaction types.Transaction) bool {
+	return transactionPool.RemoveTransaction(transaction)
+}
+
+func GetTransactionPoolLength() int {
+	return len(transactionPool.GetTransactions())
 }

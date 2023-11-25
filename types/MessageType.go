@@ -13,4 +13,8 @@ const (
 	MessageTypeBootstrapPingResponse
 	MessageTypeUnknown
 	MessageTypeFailure
+	MessageTypeBlockRequest
+	MessageTypeBlockResponse
+	MessageTypeBlockChainRequest
+	MessageTypeBlockChainResponse
 )

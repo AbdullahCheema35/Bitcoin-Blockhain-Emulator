@@ -1,5 +1,8 @@
 package types
 
+// Block struct containing both header and body
 type Block struct {
-	Transactions []Transaction
+	BlockHash string
+	Header    BlockHeader
+	Body      BlockBody
 }

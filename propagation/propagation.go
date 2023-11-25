@@ -83,14 +83,14 @@ func BroadcastBlock(block types.Block, receivedFrom types.NodeAddress) {
 }
 
 // Only initiated by you
-func BroadcastBlockRequest(blockHash types.BlockHash, receivedFrom types.NodeAddress) {
+func BroadcastBlockRequest(blockHash string, receivedFrom types.NodeAddress) {
 	// Get self server address
 	selfAddr := configuration.GetSelfServerAddress()
 	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockRequest, blockHash)
 	broadcastMessage(message, receivedFrom)
 }
 
-func BroadcastBlockResponse(block types.Block, receivedFrom types.NodeAddress) {
+func SendBlockResponse(block types.Block, receivedFrom types.NodeAddress) {
 	// Get self server address
 	selfAddr := configuration.GetSelfServerAddress()
 	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockResponse, block)
@@ -104,7 +104,7 @@ func BroadcastBlockChainRequest(receivedFrom types.NodeAddress) {
 	broadcastMessage(message, receivedFrom)
 }
 
-func BroadcastBlockChainResponse(blockChain types.BlockChain, receivedFrom types.NodeAddress) {
+func SendBlockChainResponse(blockChain types.BlockChain, receivedFrom types.NodeAddress) {
 	// Get self server address
 	selfAddr := configuration.GetSelfServerAddress()
 	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockChainResponse, blockChain)

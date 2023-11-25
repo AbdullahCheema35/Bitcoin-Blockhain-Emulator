@@ -1,5 +1,6 @@
 package types
 
 type Transaction struct {
-	Data string
+	Value string
+	Hash  string
 }
