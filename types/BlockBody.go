@@ -5,7 +5,3 @@ type BlockBody struct {
 	Transactions TransactionList
 	MerkleTree   MerkleTree // Contains the merkle tree of the transactions
 }
-
-type MerkleTree struct {
-	RootHash string
-}
