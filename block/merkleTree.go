@@ -89,9 +89,11 @@ func (tree MerkleTree) isComplete() bool {
 // Display displays the Merkle Tree
 func (tree MerkleTree) Display() {
 	fmt.Println("Merkle Tree:")
+	levels := len(tree.rows)
 	for i, row := range tree.rows {
-		fmt.Printf("Level %d: %d nodes\n", i, len(row))
-		fmt.Println(strings.Join(row, ", "))
+		fmt.Printf("Level %d: %d nodes\n", levels-i-1, len(row))
+		fmt.Println(strings.Join(row, "\n"))
+		fmt.Println()
 	}
 }
 

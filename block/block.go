@@ -24,8 +24,9 @@ type BlockHeader struct {
 	Nonce             int
 	Height            int
 	//BlockHash         string
-	MerkleRootHash string
-	Timestamp      int64
+	MerkleRootHash   string
+	Timestamp        time.Time
+	DifficultyTarget int
 }
 
 // BlockBody struct representing the body of a block
@@ -43,18 +44,13 @@ type Block struct {
 
 // Function to calculate the hash of the entire block
 func (b *Block) CalculateBlockHash() string {
-	headerHash := b.Header.CalculateHeaderHash()
-	merkleRootHash := b.Header.MerkleRootHash
-
-	combinedHash := headerHash + merkleRootHash
-
-	hash := sha256.Sum256([]byte(combinedHash))
+	hashInput := b.Header.PreviousBlockHash + fmt.Sprintf("%d", b.Header.Nonce) + fmt.Sprintf("%d", b.Header.Timestamp) + b.Header.MerkleRootHash + fmt.Sprintf("%d", b.Header.DifficultyTarget)
+	hash := sha256.Sum256([]byte(hashInput))
 	return hex.EncodeToString(hash[:])
 }
 
 // Function to create a new block
 func CreateBlock(transactions TransactionList, previousBlockHash string, height int) Block {
-	timestamp := time.Now().Unix()
 
 	// Build Merkle tree from transactions
 	merkleTree := NewMerkleTree(transactions)
@@ -64,7 +60,7 @@ func CreateBlock(transactions TransactionList, previousBlockHash string, height 
 		Nonce:             0,
 		Height:            height,
 		MerkleRootHash:    merkleTree.MerkleRoot(),
-		Timestamp:         timestamp,
+		Timestamp:         time.Now(),
 	}
 
 	// Calculate header hash
@@ -93,19 +89,19 @@ func (b *Block) IsTransactionListTampered() bool {
 	return recalculatedMerkleRoot != b.Header.MerkleRootHash
 }
 
-// Function to update block information in case of tampering
-func (b *Block) UpdateBlock(transactions TransactionList) {
-	// Tamper the first transaction's value
-	b.TamperTransaction(2, "Txx")
+// // Function to update block information in case of tampering
+// func (b *Block) UpdateBlock(transactions TransactionList) {
+// 	// Tamper the first transaction's value
+// 	//b.TamperTransaction(2, "Txx")
 
-	// Recalculate the Merkle root and update block information
-	b.Header.Nonce++
-	b.Header.Timestamp = time.Now().Unix()
-	b.Body.MerkleTree = NewMerkleTree(transactions)
-	b.Header.MerkleRootHash = b.Body.MerkleTree.MerkleRoot()
-	b.Body.Transactions = transactions
-	//b.Header.BlockHash = b.CalculateBlockHash()
-}
+// 	// Recalculate the Merkle root and update block information
+// 	b.Header.Nonce++
+// 	b.Header.Timestamp = time.Now()
+// 	b.Body.MerkleTree = NewMerkleTree(transactions)
+// 	b.Header.MerkleRootHash = b.Body.MerkleTree.MerkleRoot()
+// 	b.Body.Transactions = transactions
+// 	//b.Header.BlockHash = b.CalculateBlockHash()
+// }
 
 // Function to display the block
 // Function to display the block
@@ -116,7 +112,7 @@ func (b *Block) Display() {
 	fmt.Printf("Height: %d\n", b.Header.Height)
 	//fmt.Printf("Block Hash: %s\n", b.Header.BlockHash)
 	fmt.Printf("Merkle Root Hash: %s\n", b.Header.MerkleRootHash)
-	fmt.Printf("Timestamp: %d\n", b.Header.Timestamp)
+	fmt.Printf("Timestamp: %s\n", b.Header.Timestamp.String())
 
 	fmt.Println("\nBlock Transactions:")
 	for _, tx := range b.Body.Transactions.Transactions {
@@ -126,43 +122,43 @@ func (b *Block) Display() {
 	fmt.Println()
 }
 
-// Function to calculate the hash of block header
-func (bh *BlockHeader) CalculateHeaderHash() string {
-	hashInput := bh.PreviousBlockHash + fmt.Sprintf("%d", bh.Nonce) + fmt.Sprintf("%d", bh.Timestamp)
-	hash := sha256.Sum256([]byte(hashInput))
-	return hex.EncodeToString(hash[:])
+// // Function to calculate the hash of block header
+// func (bh *BlockHeader) CalculateHeaderHash() string {
+// 	hashInput := bh.PreviousBlockHash + fmt.Sprintf("%d", bh.Nonce) + fmt.Sprintf("%d", bh.Timestamp) + b.Header.MerkleRootHash
+// 	hash := sha256.Sum256([]byte(hashInput))
+// 	return hex.EncodeToString(hash[:])
 
-}
+// }
 
 // Function to calculate the hash of a transaction value
-func CalculateHash(value string) string {
-	hash := sha256.Sum256([]byte(value))
+func CalculateTransactionHash(value Transaction) string {
+	hash := sha256.Sum256([]byte(value.Value))
 	return hex.EncodeToString(hash[:])
 }
 
-func (b *Block) TamperTransaction(transactionIndex int, newValue string) {
-	if transactionIndex >= 0 && transactionIndex < len(b.Body.Transactions.Transactions) {
-		// Save the original hash
-		//originalHash := b.Body.Transactions.Transactions[transactionIndex].Hash
+// func (b *Block) TamperTransaction(transactionIndex int, newValue string) {
+// 	if transactionIndex >= 0 && transactionIndex < len(b.Body.Transactions.Transactions) {
+// 		// Save the original hash
+// 		//originalHash := b.Body.Transactions.Transactions[transactionIndex].Hash
 
-		// Tamper the transaction value
-		b.Body.Transactions.Transactions[transactionIndex].Value = newValue
+// 		// Tamper the transaction value
+// 		b.Body.Transactions.Transactions[transactionIndex] = newValue
 
-		// Calculate new hash for the tampered transaction value
-		newHash := CalculateHash(newValue)
+// 		// Calculate new hash for the tampered transaction value
+// 		newHash := CalculateTransactionHash(newValue)
 
-		// Update the transaction hash
-		b.Body.Transactions.Transactions[transactionIndex].Hash = newHash
+// 		// Update the transaction hash
+// 		b.Body.Transactions.Transactions[transactionIndex].Hash = newHash
 
-		// Recalculate the Merkle root
-		b.Header.Timestamp = time.Now().Unix()
-		b.Body.MerkleTree = NewMerkleTree(b.Body.Transactions)
-		b.Header.MerkleRootHash = b.Body.MerkleTree.MerkleRoot()
+// 		// Recalculate the Merkle root
+// 		b.Header.Timestamp = time.Now().Unix()
+// 		b.Body.MerkleTree = NewMerkleTree(b.Body.Transactions)
+// 		b.Header.MerkleRootHash = b.Body.MerkleTree.MerkleRoot()
 
-		// Restore the original hash for consistency
-		//b.Body.Transactions.Transactions[transactionIndex].Hash = originalHash
-	}
-}
+// 		// Restore the original hash for consistency
+// 		//b.Body.Transactions.Transactions[transactionIndex].Hash = originalHash
+// 	}
+// }
 
 // Function to recalculate Merkle Root Hash based on current block transactions
 func (b *Block) RecalculateMerkleRoot() string {
