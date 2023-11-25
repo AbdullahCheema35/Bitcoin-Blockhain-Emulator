@@ -23,13 +23,13 @@ type MerklePathElement struct {
 }
 
 // NewMerkleTree constructs a Merkle Tree from a list of transactions
-func NewMerkleTree(transactions TransactionList) *MerkleTree {
+func NewMerkleTree(transactions TransactionList) MerkleTree {
 	var row Row
 	for _, tx := range transactions.Transactions {
 		row = append(row, tx.Hash)
 	}
 
-	tree := &MerkleTree{
+	tree := MerkleTree{
 		rows: []Row{row},
 	}
 
@@ -46,12 +46,12 @@ func NewMerkleTree(transactions TransactionList) *MerkleTree {
 }
 
 // MerkleRoot returns the Merkle Root of the tree
-func (tree *MerkleTree) MerkleRoot() string {
+func (tree MerkleTree) MerkleRoot() string {
 	return tree.rows[len(tree.rows)-1][0]
 }
 
 // MerklePathForLeaf returns the Merkle Path for a specific leaf in the tree
-func (tree *MerkleTree) MerklePathForLeaf(leafIndex int) MerklePath {
+func (tree MerkleTree) MerklePathForLeaf(leafIndex int) MerklePath {
 	var merklePath MerklePath
 	i := leafIndex
 	for _, row := range tree.rows[:len(tree.rows)-1] {
@@ -66,7 +66,7 @@ func (tree *MerkleTree) MerklePathForLeaf(leafIndex int) MerklePath {
 	return merklePath
 }
 
-func (tree *MerkleTree) evaluateSibling(row Row, myIndex int) (siblingIndex int, useFirstInConcatenation bool) {
+func (tree MerkleTree) evaluateSibling(row Row, myIndex int) (siblingIndex int, useFirstInConcatenation bool) {
 	if myIndex%2 == 1 {
 		siblingIndex = myIndex - 1
 		useFirstInConcatenation = true
@@ -80,7 +80,7 @@ func (tree *MerkleTree) evaluateSibling(row Row, myIndex int) (siblingIndex int,
 	return
 }
 
-func (tree *MerkleTree) adjustRows() {
+func (tree MerkleTree) adjustRows() {
 	for level := len(tree.rows) - 1; level >= 0; level-- {
 		row := tree.rows[level]
 		//fmt.Println("Level", level, "has", len(row), "nodes")
@@ -92,7 +92,7 @@ func (tree *MerkleTree) adjustRows() {
 		}
 	}
 }
-func (tree *MerkleTree) makeRowAbove(below Row) Row {
+func (tree MerkleTree) makeRowAbove(below Row) Row {
 	size := int(math.Ceil(float64(len(below)) / 2.0))
 	row := make(Row, size)
 	for i := range row {
@@ -107,20 +107,20 @@ func (tree *MerkleTree) makeRowAbove(below Row) Row {
 	return row
 }
 
-func (tree *MerkleTree) joinAndHash(a, b string) string {
+func (tree MerkleTree) joinAndHash(a, b string) string {
 	data := strings.Join([]string{a, b}, "")
 	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:])
 }
 
-func (tree *MerkleTree) isComplete() bool {
+func (tree MerkleTree) isComplete() bool {
 	return len(tree.rows[len(tree.rows)-1]) == 1
 }
 
 // MerklePath represents the path in the Merkle Tree
 type MerklePath []MerklePathElement
 
-func (tree *MerkleTree) Display() {
+func (tree MerkleTree) Display() {
 	fmt.Println("Merkle Tree:")
 	for i, row := range tree.rows {
 		fmt.Printf("Level %d: %d nodes\n", i, len(row))

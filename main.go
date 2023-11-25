@@ -20,13 +20,14 @@ func main() {
 	}
 
 	// Create the first block
-	previousBlockHash := "000000000000" // Replace with an actual hash
+	previousBlockHash := "000000000000"
 	blockHeight := 1
 	firstBlock := block.CreateBlock(transactionsBlock1, previousBlockHash, blockHeight)
 
 	// Display original block details for the first block
 	fmt.Println("First Block Details:")
 	firstBlock.Display()
+	firstBlock.Body.MerkleTree.Display()
 
 	// Create transactions for the second block
 	transactionsBlock2 := block.TransactionList{
@@ -40,7 +41,7 @@ func main() {
 	}
 
 	// Create the second block with the previous hash pointing to the first block's hash
-	secondBlock := block.CreateBlock(transactionsBlock2, firstBlock.Header.BlockHash, blockHeight+1)
+	secondBlock := block.CreateBlock(transactionsBlock2, firstBlock.BlockHash, blockHeight+1)
 	secondBlock.Display()
 	secondBlock.Body.MerkleTree.Display()
 
@@ -54,9 +55,9 @@ func main() {
 	firstBlock.Body.MerkleTree.Display()
 
 	// Check if the second block's previous hash matches the hash of the first block
-	if secondBlock.Header.PreviousBlockHash != firstBlock.Header.BlockHash {
-		fmt.Println("\nBlock is tempered!")
-	} else {
-		fmt.Println("\nBlock is valid.")
-	}
+	// if secondBlock.Header.PreviousBlockHash != firstBlock.Header.BlockHash {
+	// 	fmt.Println("\nBlock is tempered!")
+	// } else {
+	// 	fmt.Println("\nBlock is valid.")
+	// }
 }

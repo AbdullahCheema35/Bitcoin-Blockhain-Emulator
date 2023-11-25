@@ -23,21 +23,22 @@ type BlockHeader struct {
 	PreviousBlockHash string
 	Nonce             int
 	Height            int
-	BlockHash         string
-	MerkleRootHash    string
-	Timestamp         int64
+	//BlockHash         string
+	MerkleRootHash string
+	Timestamp      int64
 }
 
 // BlockBody struct representing the body of a block
 type BlockBody struct {
 	Transactions TransactionList
-	MerkleTree   *MerkleTree // Reference to the Merkle tree
+	MerkleTree   MerkleTree // Reference to the Merkle tree
 }
 
 // Block struct containing both header and body
 type Block struct {
-	Header BlockHeader
-	Body   BlockBody
+	BlockHash string
+	Header    BlockHeader
+	Body      BlockBody
 }
 
 // Function to calculate the hash of the entire block
@@ -67,10 +68,10 @@ func CreateBlock(transactions TransactionList, previousBlockHash string, height 
 	}
 
 	// Calculate header hash
-	headerHash := header.CalculateHeaderHash()
+	//headerHash := header.CalculateHeaderHash()
 
 	// Set the calculated header hash as the block hash
-	header.BlockHash = headerHash
+	//header.BlockHash = headerHash
 
 	body := BlockBody{
 		Transactions: transactions,
@@ -103,7 +104,7 @@ func (b *Block) UpdateBlock(transactions TransactionList) {
 	b.Body.MerkleTree = NewMerkleTree(transactions)
 	b.Header.MerkleRootHash = b.Body.MerkleTree.MerkleRoot()
 	b.Body.Transactions = transactions
-	b.Header.BlockHash = b.CalculateBlockHash()
+	//b.Header.BlockHash = b.CalculateBlockHash()
 }
 
 // Function to display the block
@@ -113,7 +114,7 @@ func (b *Block) Display() {
 	fmt.Printf("Previous Block Hash: %s\n", b.Header.PreviousBlockHash)
 	fmt.Printf("Nonce: %d\n", b.Header.Nonce)
 	fmt.Printf("Height: %d\n", b.Header.Height)
-	fmt.Printf("Block Hash: %s\n", b.Header.BlockHash)
+	//fmt.Printf("Block Hash: %s\n", b.Header.BlockHash)
 	fmt.Printf("Merkle Root Hash: %s\n", b.Header.MerkleRootHash)
 	fmt.Printf("Timestamp: %d\n", b.Header.Timestamp)
 
