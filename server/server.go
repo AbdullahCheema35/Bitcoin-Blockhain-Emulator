@@ -7,6 +7,7 @@ import (
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/connection"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/nodestate"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
@@ -34,7 +35,7 @@ func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
 
 func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, bool) {
 	maxNeighbours := configuration.GetMaxNeighbours()
-	currentNeighbours, currentConnections := configuration.ReadCurrentConnections("")
+	currentNeighbours, currentConnections := nodestate.ReadCurrentConnections("")
 	if currentNeighbours >= maxNeighbours || currentConnections.ExistsAddress(clientNodeAddress) {
 		// log.Println("Maximum neighbours reached or client node already exists in the current connections list")
 
@@ -50,9 +51,9 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 	} else {
 		// Add the client node address to the current connections
 		clientNodeConnection := types.NewNodeConnection(clientNodeAddress, conn)
-		_, currentConnections := configuration.LockCurrentConnections("")
+		_, currentConnections := nodestate.LockCurrentConnections("")
 		success := connection.AddNewNodeConnection(&currentConnections, clientNodeConnection, "Server")
-		configuration.UnlockCurrentConnections(currentConnections, "")
+		nodestate.UnlockCurrentConnections(currentConnections, "")
 
 		sender := configuration.GetSelfServerAddress()
 		messageType := types.MessageTypeConnectionResponse

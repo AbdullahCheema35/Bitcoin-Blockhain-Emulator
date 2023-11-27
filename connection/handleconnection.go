@@ -8,6 +8,7 @@ import (
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/bootstrap"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/nodestate"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
@@ -31,7 +32,7 @@ func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 
 	for _, node := range existingNodesList.GetNodes() {
 		// log.Println("Establishing connection with node", i+1, "at", node.GetAddress())
-		currentNeighbours, currentConnections := configuration.ReadCurrentConnections("handleconnection.go: 29")
+		currentNeighbours, currentConnections := nodestate.ReadCurrentConnections("handleconnection.go: 29")
 		if currentNeighbours >= minNeighbours {
 			// log.Println("No need to add more connections. Currently established connections are", len(currentConnections.GetNodeConnections()), "neighbours")
 			break
@@ -43,7 +44,7 @@ func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 		time.Sleep(time.Duration(randomTime) * time.Millisecond)
 
 		// Again check if the number of neighbours is greater than or equal to the minimum number of neighbours
-		currentNeighbours, currentConnections = configuration.ReadCurrentConnections("handleconnection.go: 29")
+		currentNeighbours, currentConnections = nodestate.ReadCurrentConnections("handleconnection.go: 29")
 		if currentNeighbours >= minNeighbours {
 			// log.Println("No need to add more connections. Currently established connections are", len(currentConnections.GetNodeConnections()), "neighbours")
 			break
@@ -83,9 +84,9 @@ func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 			continue
 		}
 		nodeConnection := types.NewNodeConnection(node, conn)
-		_, currentConnections = configuration.LockCurrentConnections("Line 68: HandleCOnnecuin.go Add new node")
+		_, currentConnections = nodestate.LockCurrentConnections("Line 68: HandleCOnnecuin.go Add new node")
 		returnVal := AddNewNodeConnection(&currentConnections, nodeConnection, "handleconnection")
-		configuration.UnlockCurrentConnections(currentConnections, "Line 70: UblockNode HandleCOnnecuin.go")
+		nodestate.UnlockCurrentConnections(currentConnections, "Line 70: UblockNode HandleCOnnecuin.go")
 		if !returnVal {
 			log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
 			continue
@@ -98,7 +99,7 @@ func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 func ConnectWithNetwork_SafeMode() {
 	minNeighbours := configuration.GetMinNeighbours()
 	// Read Current Resources
-	currentNeighbours, currentConnections := configuration.ReadCurrentConnections("handleconnection.go: 76")
+	currentNeighbours, currentConnections := nodestate.ReadCurrentConnections("handleconnection.go: 76")
 	if currentNeighbours >= minNeighbours {
 		log.Println("No need to add more connections. Currently established connections are", len(currentConnections.GetNodeConnections()), "neighbours")
 		return
@@ -108,8 +109,8 @@ func ConnectWithNetwork_SafeMode() {
 	// Get the list of existing nodes in the network from the bootstrap node
 	existingNodes := bootstrap.GetExistingNodesInNetwork(bootstrapNode, serverNode)
 	if existingNodes == nil {
-		configuration.LockBootstrapChan()
-		configuration.UnlockBootstrapChan(false)
+		nodestate.LockBootstrapChan()
+		nodestate.UnlockBootstrapChan(false)
 		log.Println("Could not get the list of existing nodes in the network. Exiting...")
 		return
 	}
@@ -124,10 +125,10 @@ func ConnectWithNetwork_SafeMode() {
 
 func HandleLostNodeConnection(nc NodeConnection) {
 	// Lock Resources
-	_, currentConnections := configuration.LockCurrentConnections("handleconnection.go: 99")
+	_, currentConnections := nodestate.LockCurrentConnections("handleconnection.go: 99")
 	success := currentConnections.RemoveNodeConnection(nc)
 	// Unlock Resources
-	configuration.UnlockCurrentConnections(currentConnections, "handleconnection.go: 102")
+	nodestate.UnlockCurrentConnections(currentConnections, "handleconnection.go: 102")
 	if success {
 		log.Println("Removed broken node connection with ", nc.Node.GetAddress())
 	} else {

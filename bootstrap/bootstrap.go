@@ -6,6 +6,7 @@ import (
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/nodestate"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
@@ -14,17 +15,17 @@ type NodeAddress = types.NodeAddress
 type NodesList = types.NodesList
 
 func addUpdateExistingNodesList(node NodeAddress) {
-	_, currentExistingNodesMap := configuration.LockCurrentExistingNodes("")
+	_, currentExistingNodesMap := nodestate.LockCurrentExistingNodes("")
 	defer func() {
-		configuration.UnlockCurrentExistingNodes(currentExistingNodesMap, "")
+		nodestate.UnlockCurrentExistingNodes(currentExistingNodesMap, "")
 	}()
 	currentExistingNodesMap.AddUpdateBootstrapNode(node)
 }
 
 func getExistingNodesList() NodesList {
-	_, currentExistingNodesMap := configuration.LockCurrentExistingNodes("")
+	_, currentExistingNodesMap := nodestate.LockCurrentExistingNodes("")
 	defer func() {
-		configuration.UnlockCurrentExistingNodes(currentExistingNodesMap, "")
+		nodestate.UnlockCurrentExistingNodes(currentExistingNodesMap, "")
 	}()
 	maxDelay := configuration.GetMaxSecondsPingDelay()
 	existingNodesList := currentExistingNodesMap.GetRecentBootstrapNodes(maxDelay)

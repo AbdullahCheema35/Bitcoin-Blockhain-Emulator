@@ -22,15 +22,6 @@ func (bnl *BootstrapNodesMap) RemoveBootstrapNode(nodeAddr NodeAddress) {
 	delete(bnl.BootstrapNodes, nodeAddr.GetAddress())
 }
 
-// // GetBootstrapNodes returns a list of bootstrap nodes
-// func (bnl *BootstrapNodesMap) GetBootstrapNodesList() []BootstrapNodeAddress {
-// 	bootstrapNodes := make([]BootstrapNodeAddress, 0)
-// 	for _, node := range bnl.BootstrapNodes {
-// 		bootstrapNodes = append(bootstrapNodes, node)
-// 	}
-// 	return bootstrapNodes
-// }
-
 // GetRecentBootstrapNodes returns a list of bootstrap nodes that were updated recently
 func (bnl *BootstrapNodesMap) GetRecentBootstrapNodes(maxSecondsPingDelay int) NodesList {
 	recentNodesList := NewNodesList()

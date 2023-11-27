@@ -1,6 +1,15 @@
 package propagation
 
-import "github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
+import (
+	"log"
+
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/mining"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/nodestate"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
+)
+
+// import "github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 
 func CreateTransaction() {
 	// Create a transaction
@@ -39,16 +48,53 @@ func CreateBlock() {
 
 func HandleReceivedTransaction(transaction types.Transaction, receivedFrom types.NodeAddress) {
 	// Handle the received transaction from a node
+	// Check if the transaction is already present in the transaction pool
+	// If the transaction is not present in the transaction pool, add the transaction to the transaction pool
+	// If the transaction is already present in the transaction pool, discard the transaction
 
-	// Flood the transaction to all the peers except the one from which the transaction was received
-	BroadcastTransaction(transaction, receivedFrom)
+	transactionPool := nodestate.LockTransactionPool()
+	isAdded := transactionPool.AddTransaction(transaction)
+	nodestate.UnlockTransactionPool(transactionPool)
+
+	if isAdded {
+		// Flood the transaction to all the peers except the one from which the transaction was received
+		BroadcastTransaction(transaction, receivedFrom)
+	}
+	// else discard the transaction
 }
 
 func HandleReceivedBlock(block types.Block, receivedFrom types.NodeAddress) {
 	// Handle the received block from a node
+	// Verify the received block
+	// If the block is valid, add the block to the blockchain, and broadcast the block to all the peers
+	// If the block is invalid, discard the block
 
-	// Flood the block to all the peers except the one from which the block was received
-	BroadcastBlock(block, receivedFrom)
+	result := mining.AddNewBlockToBlockChain(block)
+
+	switch result {
+	case mining.NewBlockVerificationFailed:
+		return
+	case mining.NewHeightLEQCurrentHeight:
+		return
+	case mining.NewBlockDuplicateTransactions:
+		selfNode := configuration.GetSelfServerAddress()
+		if selfNode.GetAddress() == receivedFrom.GetAddress() {
+			return
+		}
+		BroadcastBlockChainRequest()
+		return
+	case mining.NewBlockPrevHashDontMatch:
+		selfNode := configuration.GetSelfServerAddress()
+		if selfNode.GetAddress() == receivedFrom.GetAddress() {
+			return
+		}
+		BroadcastBlockChainRequest()
+		return
+	case mining.NewBlockAddedSuccessfully:
+		go StartCreateBlock()
+		// Flood the block to all the peers except the one from which the block was received
+		BroadcastBlock(block, receivedFrom)
+	}
 }
 
 func HandleBlockRequest(blockHash string, receivedFrom types.NodeAddress) {
@@ -63,4 +109,84 @@ func HandleBlockChainRequest(receivedFrom types.NodeAddress) {
 
 	// Send the blockchain to the node from which the request was received
 	SendBlockChainResponse(blockChain, receivedFrom)
+}
+
+func HandleTopologyRequest(receivedFrom types.NodeAddress, topologyRequest types.TopologyRequest) {
+	// Handle the received topology request from a node
+	// Add my own peers to the list of peers in the topology request
+	// Broadcast the topology request to all the peers except the one from which the request was received and the ones already present in the topology request
+
+	// Get self server address
+	selfAddr := configuration.GetSelfServerAddress()
+
+	myPeersList := types.NewNodesList()
+	toSendPeersList := types.NewNodesList()
+
+	previousPeersList := topologyRequest.NodesFound
+
+	_, currentConns := nodestate.ReadCurrentConnections("")
+
+	// Get this node's peers and add them to the list
+	for _, nodeConn := range currentConns.GetNodeConnections() {
+		myPeersList.AddNode(nodeConn.Node)
+		added := previousPeersList.AddNode(nodeConn.Node)
+		if added {
+			toSendPeersList.AddNode(nodeConn.Node)
+		}
+	}
+
+	networkList := types.NewNetworkList(selfAddr, myPeersList)
+
+	// Add current node to the origin list
+	originList := topologyRequest.Origin
+	originList.AddNode(selfAddr)
+
+	// Create topology request object
+	newTopologyRequest := types.NewTopologyRequest(originList, previousPeersList, networkList)
+
+	SendTopologyResponse(newTopologyRequest, receivedFrom)
+	BroadcastTopologyRequest(newTopologyRequest, toSendPeersList)
+}
+
+func HandleTopologyResponse(topologyRequest types.TopologyRequest, receivedFrom types.NodeAddress) {
+	// Handle the received topology response from a node
+	// Add the node from which the response was received to the list of nodes found in the topology request
+	// Add the peers of the node from which the response was received to the list of nodes found in the topology request
+	// Broadcast the topology request to all the peers except the one from which the request was received and the ones already present in the topology request
+
+	// Get self server address
+	selfAddr := configuration.GetSelfServerAddress()
+
+	originList := topologyRequest.Origin
+	// Pop the last node from the origin list
+	originList.Nodes = originList.Nodes[:len(originList.Nodes)-1]
+
+	// Check if I am the origin of the topology request (i.e. the topology request has completed its journey)
+	// Check if length of origin list is 1
+	if len(originList.Nodes) != 1 {
+		// Send the topology response to the next node in the origin list
+		nextNode := originList.Nodes[len(originList.Nodes)-1]
+		SendTopologyResponse(topologyRequest, nextNode)
+		return
+	}
+	// Check if the origin of the topology request is the same as the node from which the response was received
+	if originList.Nodes[0].GetAddress() != selfAddr.GetAddress() {
+		log.Println("\n\n\n\n\n\nLost my way\n\n\n\n\n\n")
+		return
+	}
+
+	// The topology request has completed its journey
+	topologyChan := nodestate.GetTopologyChan()
+
+	select {
+	case val, ok := <-topologyChan:
+		if !ok {
+			log.Println("Topology channel closed")
+			return
+		} else {
+			topologyChan <- val
+		}
+	default:
+		topologyChan <- topologyRequest
+	}
 }

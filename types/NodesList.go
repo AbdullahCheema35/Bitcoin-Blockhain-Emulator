@@ -32,6 +32,16 @@ func (nl *NodesList) RemoveNode(node NodeAddress) bool {
 	return false
 }
 
+// ContainsNode checks if the list contains a node
+func (nl *NodesList) ContainsNode(node NodeAddress) bool {
+	for _, n := range nl.Nodes {
+		if n == node {
+			return true
+		}
+	}
+	return false
+}
+
 // GetNodes returns the list of nodes
 func (nl *NodesList) GetNodes() []NodeAddress {
 	return nl.Nodes

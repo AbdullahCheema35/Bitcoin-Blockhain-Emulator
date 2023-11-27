@@ -17,4 +17,6 @@ const (
 	MessageTypeBlockResponse
 	MessageTypeBlockChainRequest
 	MessageTypeBlockChainResponse
+	MessageTypeTopologyRequest
+	MessageTypeTopologyResponse
 )

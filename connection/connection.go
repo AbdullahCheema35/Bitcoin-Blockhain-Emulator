@@ -67,11 +67,8 @@ func listenForMessages(nc types.NodeConnection) {
 		switch message.Header.Type {
 		case types.MessageTypeTransaction:
 			sender := message.Header.Sender
-			// TODO: Handle the transaction
-			// Temp fix
 			transactionData := message.Body.(string)
 			log.Printf("Received transaction %v from %v\n", transactionData, sender.GetAddress())
-			// End of temp fix
 		case types.MessageTypeBlock:
 			sender := message.Header.Sender
 			log.Println("Received a block from", sender.GetAddress())

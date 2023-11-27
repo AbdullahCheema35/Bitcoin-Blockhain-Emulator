@@ -8,6 +8,7 @@ import (
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/bootstrap"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/connection"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/nodestate"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
@@ -28,7 +29,7 @@ func handleBootstrapServer() {
 
 	for {
 		// Read the current connections list
-		currentNeighbours, _ := configuration.ReadCurrentConnections("client.go: 29")
+		currentNeighbours, _ := nodestate.ReadCurrentConnections("client.go: 29")
 
 		// If the number of neighbours is less than the minimum number of neighbours, then connect to the network
 		if currentNeighbours < configuration.GetMinNeighbours() {
@@ -53,7 +54,7 @@ func StartClient() {
 		// log.Println("Waiting for one seconds")
 		time.Sleep(30000 * time.Millisecond)
 		// Check if there are any neighbours
-		currentNeighbours, currentConnectionsList := configuration.ReadCurrentConnections("client.go: 29")
+		currentNeighbours, currentConnectionsList := nodestate.ReadCurrentConnections("client.go: 29")
 		if currentNeighbours == 0 {
 			log.Println("No neighbours to send arbitrary transaction to")
 			continue

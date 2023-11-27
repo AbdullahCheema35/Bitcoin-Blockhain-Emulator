@@ -1,10 +1,11 @@
 package propagation
 
 import (
-	"log"
+	"time"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/nodestate"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
@@ -51,16 +52,11 @@ import (
 
 func broadcastMessage(message types.Message, receivedFrom types.NodeAddress) {
 	// Send to all the peers except the one from which the message was received
-	_, connectionsList := configuration.ReadCurrentConnections("")
+	_, connectionsList := nodestate.ReadCurrentConnections("")
 	for _, nodeConn := range connectionsList.GetNodeConnections() {
 		if nodeConn.Node != receivedFrom {
 			conn := nodeConn.Conn
-			isMessageSent := comm.SendMessage(conn, message)
-			if !isMessageSent {
-				log.Printf("Could not send message %v to %v\n", message.Body.(string), nodeConn.Node.GetAddress())
-			} else {
-				log.Printf("Sent message %v to %v\n", message.Body.(string), nodeConn.Node.GetAddress())
-			}
+			comm.SendMessage(conn, message)
 		}
 	}
 }
@@ -82,26 +78,26 @@ func BroadcastBlock(block types.Block, receivedFrom types.NodeAddress) {
 	broadcastMessage(message, receivedFrom)
 }
 
-// Only initiated by you
-func BroadcastBlockRequest(blockHash string, receivedFrom types.NodeAddress) {
-	// Get self server address
-	selfAddr := configuration.GetSelfServerAddress()
-	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockRequest, blockHash)
-	broadcastMessage(message, receivedFrom)
-}
+// // Only initiated by you
+// func BroadcastBlockRequest(blockHash string, receivedFrom types.NodeAddress) {
+// 	// Get self server address
+// 	selfAddr := configuration.GetSelfServerAddress()
+// 	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockRequest, blockHash)
+// 	broadcastMessage(message, receivedFrom)
+// }
 
-func SendBlockResponse(block types.Block, receivedFrom types.NodeAddress) {
-	// Get self server address
-	selfAddr := configuration.GetSelfServerAddress()
-	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockResponse, block)
-	broadcastMessage(message, receivedFrom)
-}
+// func SendBlockResponse(block types.Block, receivedFrom types.NodeAddress) {
+// 	// Get self server address
+// 	selfAddr := configuration.GetSelfServerAddress()
+// 	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockResponse, block)
+// 	broadcastMessage(message, receivedFrom)
+// }
 
-func BroadcastBlockChainRequest(receivedFrom types.NodeAddress) {
+func BroadcastBlockChainRequest() {
 	// Get self server address
 	selfAddr := configuration.GetSelfServerAddress()
-	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockChainRequest, "")
-	broadcastMessage(message, receivedFrom)
+	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockChainRequest, nil)
+	broadcastMessage(message, selfAddr)
 }
 
 func SendBlockChainResponse(blockChain types.BlockChain, receivedFrom types.NodeAddress) {
@@ -109,4 +105,100 @@ func SendBlockChainResponse(blockChain types.BlockChain, receivedFrom types.Node
 	selfAddr := configuration.GetSelfServerAddress()
 	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockChainResponse, blockChain)
 	broadcastMessage(message, receivedFrom)
+}
+
+func InitiateTopologyRequest() types.TopologyRequest {
+	// Get self server address
+	selfAddr := configuration.GetSelfServerAddress()
+
+	nodesFound := types.NewNodesList()
+	nodesFound.AddNode(selfAddr)
+
+	_, currentConns := nodestate.ReadCurrentConnections("")
+
+	// Get this node's peers and add them to the list
+	for _, nodeConn := range currentConns.GetNodeConnections() {
+		nodesFound.AddNode(nodeConn.Node)
+	}
+
+	networkList := types.NewNetworkList(selfAddr, nodesFound)
+
+	originList := types.NewNodesList()
+	originList.AddNode(selfAddr)
+
+	// Create topology request object
+	topologyRequest := types.NewTopologyRequest(originList, nodesFound, networkList)
+
+	message := comm.CreateMessage(selfAddr, types.MessageTypeTopologyRequest, topologyRequest)
+	broadcastMessage(message, selfAddr)
+
+	return topologyRequest
+}
+
+func BroadcastTopologyRequest(topologyRequest types.TopologyRequest, toSendPeersList types.NodesList) {
+	// Get self server address
+	selfAddr := configuration.GetSelfServerAddress()
+
+	message := comm.CreateMessage(selfAddr, types.MessageTypeTopologyRequest, topologyRequest)
+
+	// Send to all the peers except the ones already present in the topology request
+	_, connectionsList := nodestate.ReadCurrentConnections("")
+	for _, nodeConn := range connectionsList.GetNodeConnections() {
+		if !toSendPeersList.ContainsNode(nodeConn.Node) {
+			conn := nodeConn.Conn
+			comm.SendMessage(conn, message)
+		}
+	}
+}
+
+func SendTopologyResponse(topologyRequest types.TopologyRequest, receivedFrom types.NodeAddress) {
+	// Get self server address
+	selfAddr := configuration.GetSelfServerAddress()
+
+	message := comm.CreateMessage(selfAddr, types.MessageTypeTopologyResponse, topologyRequest)
+
+	// Send to the node from which the request was received
+	_, connectionsList := nodestate.ReadCurrentConnections("")
+	for _, nodeConn := range connectionsList.GetNodeConnections() {
+		if nodeConn.Node == receivedFrom {
+			conn := nodeConn.Conn
+			comm.SendMessage(conn, message)
+		}
+	}
+}
+
+func DisplayP2PNetwork() {
+	// Display the current P2P network connections
+	topologyRequest := InitiateTopologyRequest()
+
+	nodesFound := topologyRequest.NodesFound
+	networkList := topologyRequest.ThisNodePeers
+
+	listOfNetworkList := make([]types.NetworkList, 0)
+
+	listOfNetworkList = append(listOfNetworkList, networkList)
+
+	topologyChan := nodestate.InitTopologyChan()
+
+	for {
+		select {
+		case topologyRequest := <-topologyChan:
+			newNodesFound := topologyRequest.NodesFound
+			for _, node := range newNodesFound.GetNodes() {
+				nodesFound.AddNode(node)
+			}
+			networkList := topologyRequest.ThisNodePeers
+
+			listOfNetworkList = append(listOfNetworkList, networkList)
+			if len(nodesFound.GetNodes()) == len(listOfNetworkList) {
+				// All nodes have been found
+				// Display the network
+				nodestate.CloseTopologyChan()
+				break
+			}
+		default:
+			// Sleep for 500ms
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
 }

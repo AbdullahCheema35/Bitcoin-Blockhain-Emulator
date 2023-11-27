@@ -1,8 +1,6 @@
 package types
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"time"
 )
@@ -14,18 +12,11 @@ type Block struct {
 	Body      BlockBody
 }
 
-// Function to calculate the hash of the block
-func (bh *BlockHeader) CalculateBlockHeaderHash() string {
-	hashInput := bh.PreviousBlockHash + fmt.Sprintf("%d", bh.Nonce) + fmt.Sprintf("%d", bh.Timestamp.UnixMicro()) + bh.MerkleRootHash + fmt.Sprintf("%d", bh.DifficultyTarget)
-	hash := sha256.Sum256([]byte(hashInput))
-	return hex.EncodeToString(hash[:])
-}
-
 // Function to calculate the hash of the entire block
-func (b *Block) CalculateBlockHash() string {
-	blockHashString := b.Header.CalculateBlockHeaderHash()
+func (b *Block) RecalculateBlockHash() (string, []byte) {
+	blockHashString, blockHashBytes := b.Header.RecalculateBlockHeaderHash()
 	b.BlockHash = blockHashString
-	return blockHashString
+	return blockHashString, blockHashBytes
 }
 
 // Function to create a new block
@@ -46,24 +37,26 @@ func CreateBlock(transactions TransactionList, previousBlockHash string, height 
 		MerkleTree:   merkleTree,
 	}
 
+	blockHashString, _ := header.RecalculateBlockHeaderHash()
+
 	return Block{
 		Header:    header,
 		Body:      body,
-		BlockHash: header.CalculateBlockHeaderHash(),
+		BlockHash: blockHashString,
 	}
 }
 
 // Function to check if the transaction list has been tampered with
-func (b *Block) IsTransactionListTampered() bool {
+func (b Block) IsTransactionListTampered() bool {
 	// Recalculate the Merkle root based on the updated transactions
-	recalculatedMerkleRoot := b.Body.MerkleTree.MerkleRoot()
+	recalculatedMerkleRoot := NewMerkleTree(b.Body.Transactions).MerkleRoot()
 
 	// Compare the recalculated Merkle root with the one stored in the block header
 	return recalculatedMerkleRoot != b.Header.MerkleRootHash
 }
 
 // Function to display the block
-func (b *Block) Display() {
+func (b Block) Display() {
 	fmt.Println("Block Header:")
 	fmt.Printf("Previous Block Hash: %s\n", b.Header.PreviousBlockHash)
 	fmt.Printf("Nonce: %d\n", b.Header.Nonce)
@@ -80,19 +73,12 @@ func (b *Block) Display() {
 	fmt.Println()
 }
 
-// Function to calculate the hash of a transaction value
-func (tx *Transaction) CalculateTransactionHash(transaction Transaction) string {
-	hash := sha256.Sum256([]byte(transaction.Value))
-	hashString := hex.EncodeToString(hash[:])
-	transaction.Hash = hashString
-	return hashString
-}
-
 // Function to recalculate Merkle Root Hash based on current block transactions
 func (b *Block) RecalculateMerkleRoot() string {
 	// Recalculate Merkle Root Hash
-	b.Body.MerkleTree = NewMerkleTree(b.Body.Transactions)
-	return b.Body.MerkleTree.MerkleRoot()
+	newMerkleTreeRoot := NewMerkleTree(b.Body.Transactions).MerkleRoot()
+	b.Header.MerkleRootHash = newMerkleTreeRoot
+	return newMerkleTreeRoot
 }
 
 // // Function to update block information in case of tampering
