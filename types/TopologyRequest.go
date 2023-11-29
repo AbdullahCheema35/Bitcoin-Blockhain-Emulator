@@ -27,3 +27,16 @@ func NewTopologyRequest(origin NodesList, nodesFound NodesList, thisNodePeers Ne
 		ThisNodePeers: thisNodePeers,
 	}
 }
+
+// Display prints a text-based UI showing the connections of every node in the network list
+func (nl NetworkList) Display() {
+	// Display the connections
+	// fmt.Printf("Node %s\n", nl.Src.GetAddress())
+	// fmt.Println("+- Connections:")
+
+	for _, node := range nl.Dst.GetNodes() {
+		if node != nl.Src {
+			// fmt.Printf("   +- %s\n", node.GetAddress())
+		}
+	}
+}

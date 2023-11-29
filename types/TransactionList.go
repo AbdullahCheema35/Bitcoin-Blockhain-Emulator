@@ -1,5 +1,9 @@
 package types
 
+import (
+	"fmt"
+)
+
 type TransactionList struct {
 	Transactions []Transaction
 }
@@ -40,4 +44,23 @@ func (tl *TransactionList) Contains(transaction Transaction) bool {
 		}
 	}
 	return false
+}
+
+func DisplayTransactionPool(transactionPool *TransactionList) {
+	fmt.Println("Transaction Pool:")
+	transactions := transactionPool.GetTransactions()
+
+	if len(transactions) == 0 {
+		fmt.Println("No transactions in the pool.")
+		return
+	}
+
+	for i, transaction := range transactions {
+		fmt.Printf("%d. Hash: %s, Value: %s\n", i+1, transaction.Hash, transaction.Value)
+	}
+	fmt.Println("------------------------")
+}
+
+func NewTransactionListFromSlice(transactions []Transaction) TransactionList {
+	return TransactionList{Transactions: transactions}
 }

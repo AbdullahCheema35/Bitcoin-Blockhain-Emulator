@@ -48,11 +48,11 @@ func (tree MerkleTree) MerkleRoot() string {
 func (tree MerkleTree) adjustRows() {
 	for level := len(tree.rows) - 1; level >= 0; level-- {
 		row := tree.rows[level]
-		// fmt.Println("Level", level, "has", len(row), "nodes")
+		// // fmt.Println("Level", level, "has", len(row), "nodes")
 		if len(row)%2 != 0 && len(row) > 1 {
-			// fmt.Println("Adjusted row length to ensure even nodes in level", level)
+			// // fmt.Println("Adjusted row length to ensure even nodes in level", level)
 			lastNode := row[len(row)-1]
-			// fmt.Println("Duplicating node:", lastNode)
+			// // fmt.Println("Duplicating node:", lastNode)
 			tree.rows[level] = append(tree.rows[level], lastNode)
 		}
 	}
@@ -88,7 +88,7 @@ func (tree MerkleTree) isComplete() bool {
 
 // Display displays the Merkle Tree
 func (tree MerkleTree) Display() {
-	fmt.Println("Merkle Tree:")
+	// fmt.Println("Merkle Tree:")
 	levels := len(tree.rows)
 	for i, row := range tree.rows {
 		fmt.Printf("Level %d: %d nodes\n", levels-i-1, len(row))

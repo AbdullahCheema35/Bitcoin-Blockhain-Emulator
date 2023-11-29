@@ -1,11 +1,11 @@
 package connection
 
 import (
-	"log"
 	"net"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/propagation"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
@@ -19,7 +19,7 @@ func connectToNode(node types.NodeAddress) net.Conn {
 	nodeAddress := node.GetAddress()
 	conn, err := net.Dial("tcp", nodeAddress)
 	if err != nil {
-		log.Println("Error connecting to node:", err)
+		// log.Println("Error connecting to node:", err)
 		return nil
 	}
 	return conn
@@ -42,10 +42,10 @@ func receiveConnectionResponseFromNode(conn net.Conn) bool {
 	}
 	switch message.Header.Type {
 	case types.MessageTypeConnectionResponse:
-		// log.Println("Received a successful connection response from", message.Header.Sender.GetAddress())
+		// // log.Println("Received a successful connection response from", message.Header.Sender.GetAddress())
 		return true
 	default:
-		// log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
+		// // log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
 		conn.Close()
 		return false
 	}
@@ -54,7 +54,7 @@ func receiveConnectionResponseFromNode(conn net.Conn) bool {
 func listenForMessages(nc types.NodeConnection) {
 	conn := nc.Conn
 
-	log.Println("Listening for messages from", nc.Node.GetAddress())
+	// log.Println("Listening for messages from", nc.Node.GetAddress())
 
 	for {
 		err, message := comm.ReceiveMessage(conn)
@@ -67,14 +67,33 @@ func listenForMessages(nc types.NodeConnection) {
 		switch message.Header.Type {
 		case types.MessageTypeTransaction:
 			sender := message.Header.Sender
-			transactionData := message.Body.(string)
-			log.Printf("Received transaction %v from %v\n", transactionData, sender.GetAddress())
+			body := message.Body.(types.Transaction)
+			propagation.HandleReceivedTransaction(body, sender)
+			// log.Printf("Received transaction %v from %v\n", body, sender.GetAddress())
 		case types.MessageTypeBlock:
 			sender := message.Header.Sender
-			log.Println("Received a block from", sender.GetAddress())
-		default:
+			body := message.Body.(types.Block)
+			propagation.HandleReceivedBlock(body, sender)
+			// log.Println("Received a block from", sender.GetAddress())
+		case types.MessageTypeBlockChainRequest:
 			sender := message.Header.Sender
-			log.Println("Received an unknown message from", sender.GetAddress())
+			// log.Println("Received a blockchain request from", sender.GetAddress())
+			propagation.HandleBlockChainRequest(sender)
+		case types.MessageTypeBlockChainResponse:
+			sender := message.Header.Sender
+			// log.Println("Received a blockchain response from", sender.GetAddress())
+			propagation.HandleReceivedBlockChain(message.Body.(types.BlockChain), sender)
+		case types.MessageTypeTopologyRequest:
+			sender := message.Header.Sender
+			// log.Println("Received a topology request from", sender.GetAddress())
+			propagation.HandleTopologyRequest(sender, message.Body.(types.TopologyRequest))
+		case types.MessageTypeTopologyResponse:
+			sender := message.Header.Sender
+			// log.Println("Received a topology response from", sender.GetAddress())
+			propagation.HandleTopologyResponse(message.Body.(types.TopologyRequest), sender)
+		default:
+			// sender := message.Header.Sender
+			// log.Println("Received an unknown message from", sender.GetAddress())
 		}
 	}
 }

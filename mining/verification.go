@@ -1,62 +1,42 @@
 package mining
 
 import (
-	"fmt"
+	"os"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
-)
-
-type ReturnType uint8
-
-const (
-	MiningProofFailed ReturnType = iota
-	// MiningProofSuccessful
-	MerkleRootFailed
-	AddBlockFailed
-	NewBlockVerificationFailed
-	// MerkleRootSuccessful
-	PreviousBlockHashFailed
-	// PreviousBlockHashSuccessful
-	BlockHeightFailed
-	// BlockHeightSuccessful
-	GenesisBlockHeightFailed
-	// GenesisBlockHeightSuccessful
-	DuplicateTransactionsFailed
-	// DuplicateTransactionsSuccessful
-	BlockChainVerificationSuccessful
-	// BlockChainSuccessful
-	// BlockVerificationFailed
-	BlockVerificationSuccessful
-	NewHeightLEQCurrentHeight
-	NewBlockAddedSuccessfully
-	NewBlockPrevHashDontMatch
-	NewBlockDuplicateTransactions
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/validation"
 )
 
 // VerifyBlock checks if the block's hash and Merkle root are valid
-func VerifyBlock(b types.Block) ReturnType {
+func VerifyBlock(b types.Block) types.ReturnType {
 	// Verify the mining proof
 
 	// Generate the target hash
-	_, targetHashBytes := GenerateTargetHash(b.Header.DifficultyTarget)
+	diffTarget := b.Header.DifficultyTarget
+	_, targetHashBytes := validation.GenerateTargetHash(diffTarget)
 	// Recalculate the block header hash
 	_, hashBytes := b.RecalculateBlockHash()
-	if !compareWithTargetHash(hashBytes, targetHashBytes) {
-		fmt.Println("Mining proof verification failed!")
-		return MiningProofFailed
+	if !validation.CompareWithTargetHash(hashBytes, targetHashBytes) {
+		// fmt.Println("Mining proof verification failed!")
+		// fmt.Println("Difficulty target:", diffTarget)
+		// fmt.Println("Current Nonce: ", b.Header.Nonce)
+		// fmt.Println("Target hash:", targetHashString)
+		// fmt.Println("Block hash:", hashString)
+		os.Exit(1)
+		return types.MiningProofFailed
 	}
 
 	// Verify the Merkle root
 	if b.IsTransactionListTampered() {
-		fmt.Println("Merkle root verification failed!")
-		return MerkleRootFailed
+		// fmt.Println("Merkle root verification failed!")
+		return types.MerkleRootFailed
 	}
 
-	fmt.Println("Block verification successful!")
-	return BlockVerificationSuccessful
+	// fmt.Println("Block verification successful!")
+	return types.BlockVerificationSuccessful
 }
 
-func VerifyBlockChain(bchain types.BlockChain) (ReturnType, *types.BlockNode, *types.BlockNode) {
+func VerifyBlockChain(bchain types.BlockChain) (types.ReturnType, *types.BlockNode, *types.BlockNode) {
 	// Verify the blocks in the blockchain
 
 	prevBlockHash := ""
@@ -66,20 +46,20 @@ func VerifyBlockChain(bchain types.BlockChain) (ReturnType, *types.BlockNode, *t
 
 	for currentNode != nil {
 		// Verify the current block (mining proof, Merkle root)
-		if ret := VerifyBlock(currentNode.Block); ret != BlockVerificationSuccessful {
+		if ret := VerifyBlock(currentNode.Block); ret != types.BlockVerificationSuccessful {
 			return ret, currentNode, prevNode
 		}
 
 		// Verify the block height
 		if currentNode.Block.Header.Height != prevHeight-1 && currentNode != bchain.LatestNode {
-			fmt.Println("Block height verification failed!")
-			return BlockHeightFailed, currentNode, prevNode
+			// fmt.Println("Block height verification failed!")
+			return types.BlockHeightFailed, currentNode, prevNode
 		}
 
 		// Verify the previous block hash
 		if currentNode.Block.BlockHash != prevBlockHash && currentNode != bchain.LatestNode {
-			fmt.Println("Previous block hash verification failed!")
-			return PreviousBlockHashFailed, currentNode, prevNode
+			// fmt.Println("Previous block hash verification failed!")
+			return types.PreviousBlockHashFailed, currentNode, prevNode
 		}
 
 		prevHeight = currentNode.Block.Header.Height
@@ -90,11 +70,11 @@ func VerifyBlockChain(bchain types.BlockChain) (ReturnType, *types.BlockNode, *t
 
 	// Make sure that the last node is the genesis block
 	if prevNode.Block.Header.Height != 0 {
-		fmt.Println("Genesis block height verification failed!")
-		return GenesisBlockHeightFailed, currentNode, prevNode
+		// fmt.Println("Genesis block height verification failed!")
+		return types.GenesisBlockHeightFailed, currentNode, prevNode
 	}
 
-	return BlockChainVerificationSuccessful, nil, nil
+	return types.BlockChainVerificationSuccessful, nil, nil
 }
 
 // func VerifyBlockChain(bchain types.BlockChain) (int, bool) {
@@ -126,7 +106,7 @@ func VerifyBlockChain(bchain types.BlockChain) (ReturnType, *types.BlockNode, *t
 
 // 		// Verify the previous block hash
 // 		if currentNode.Block.Header.PreviousBlockHash != prevNode.Block.BlockHash {
-// 			fmt.Println("Previous block hash verification failed!")
+// 			// fmt.Println("Previous block hash verification failed!")
 // 			if currentHeight-1 < lowestHeight {
 // 				ok = false
 // 				lowestHeight = currentHeight - 1
@@ -135,7 +115,7 @@ func VerifyBlockChain(bchain types.BlockChain) (ReturnType, *types.BlockNode, *t
 
 // 		// Verify the block height
 // 		if currentNode.Block.Header.Height != prevNode.Block.Header.Height+1 {
-// 			fmt.Println("Block height verification failed!")
+// 			// fmt.Println("Block height verification failed!")
 // 			if currentHeight-1 < lowestHeight {
 // 				ok = false
 // 				lowestHeight = currentHeight
@@ -152,13 +132,13 @@ func VerifyBlockChain(bchain types.BlockChain) (ReturnType, *types.BlockNode, *t
 
 // 	// Verify the block height
 // 	if currentNode.Block.Header.Height != 0 {
-// 		fmt.Println("Genesis block height verification failed!")
+// 		// fmt.Println("Genesis block height verification failed!")
 // 		return false
 // 	}
 
 // 	// Verify the previous block hash
 // 	if currentNode.Block.Header.PreviousBlockHash != "00000000000000000000000000000000" {
-// 		fmt.Println("Genesis block previous hash verification failed!")
+// 		// fmt.Println("Genesis block previous hash verification failed!")
 // 		return false
 // 	}
 
@@ -167,7 +147,7 @@ func VerifyBlockChain(bchain types.BlockChain) (ReturnType, *types.BlockNode, *t
 // 		return false
 // 	}
 
-// 	fmt.Println("Blockchain verification successful!")
+// 	// fmt.Println("Blockchain verification successful!")
 // 	return true
 // }
 
@@ -227,7 +207,7 @@ func VerifyDuplicateTransactionsInBlockChain(bchain types.BlockChain) (int, bool
 		transactionList := currentNode.Block.Body.Transactions
 		for _, tx := range transactionList.Transactions {
 			if h, ok := transactionMap[tx.Hash]; ok {
-				fmt.Println("Duplicate transaction found at block height:", h)
+				// fmt.Println("Duplicate transaction found at block height:", h)
 				return h, false
 			} else {
 				transactionMap[tx.Hash] = currentHeight
@@ -255,7 +235,7 @@ func VerifyDuplicateTransactionsInBlock(bchain types.BlockChain, b types.Block) 
 		transactionList := currentNode.Block.Body.Transactions
 		for _, tx := range transactionList.Transactions {
 			if _, ok := transactionMap[tx.Hash]; ok {
-				fmt.Println("Duplicate transaction found in block!")
+				// fmt.Println("Duplicate transaction found in block!")
 				return false
 			}
 		}

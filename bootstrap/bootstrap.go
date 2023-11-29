@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"log"
 	"net"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
@@ -36,13 +35,13 @@ func createMessageHeader(msgType types.MessageType) types.MessageHeader {
 	sender := configuration.GetSelfBootstrapAddress()
 	switch msgType {
 	case types.MessageTypeBootstrapConnectionRequest:
-		// log.Println("Received bootstrap connection request")
+		// // log.Println("Received bootstrap connection request")
 		msgType = types.MessageTypeBootstrapConnectionResponse
 	case types.MessageTypeBootstrapPingRequest:
-		// log.Println("Received bootstrap ping request")
+		// // log.Println("Received bootstrap ping request")
 		msgType = types.MessageTypeBootstrapPingResponse
 	default:
-		// log.Println("Invalid message type")
+		// // log.Println("Invalid message type")
 		msgType = types.MessageTypeUnknown
 	}
 	return types.MessageHeader{
@@ -55,20 +54,20 @@ func handleBootstrapRequest(msg types.Message) (types.MessageType, NodeAddress) 
 	switch msg.Header.Type {
 	case types.MessageTypeBootstrapConnectionRequest:
 		sender := msg.Header.Sender
-		// log.Println("Received bootstrap connection request from", sender.GetAddress())
+		// // log.Println("Received bootstrap connection request from", sender.GetAddress())
 		return types.MessageTypeBootstrapConnectionRequest, sender
 	case types.MessageTypeBootstrapPingRequest:
 		sender := msg.Header.Sender
-		// log.Println("Received bootstrap ping request from", sender.GetAddress())
+		// // log.Println("Received bootstrap ping request from", sender.GetAddress())
 		return types.MessageTypeBootstrapPingRequest, sender
 	default:
-		// log.Println("Invalid message type")
+		// // log.Println("Invalid message type")
 		return types.MessageTypeUnknown, NodeAddress{}
 	}
 }
 
 func respondToBootstrapRequest(conn net.Conn, msgType types.MessageType, currentExistingNodesList interface{}) {
-	// log.Println("Sending bootstrap connection response")
+	// // log.Println("Sending bootstrap connection response")
 	header := createMessageHeader(msgType)
 	body := currentExistingNodesList
 	msg := types.NewMessage(header, body)
@@ -85,22 +84,22 @@ func handleBootstrapQuery(conn net.Conn) {
 	// Receive the NodeAddress of the node's server that is querying to the bootstrap node
 	msgRcvSuccessfully, msg := comm.ReceiveMessage(conn)
 	if !msgRcvSuccessfully { // Failed to receive message from the querying node, i.e., the connection is broken
-		// log.Println("Error receiving message from querying node")
+		// // log.Println("Error receiving message from querying node")
 		return
 	}
 	msgType, sender := handleBootstrapRequest(msg)
 	switch msgType {
 	case types.MessageTypeBootstrapConnectionRequest:
-		// log.Println("Received bootstrap connection request")
+		// // log.Println("Received bootstrap connection request")
 		addUpdateExistingNodesList(sender)
 		currentExistingNodesList := getExistingNodesList()
 		respondToBootstrapRequest(conn, msgType, currentExistingNodesList)
 	case types.MessageTypeBootstrapPingRequest:
-		// log.Println("Received bootstrap ping request")
+		// // log.Println("Received bootstrap ping request")
 		addUpdateExistingNodesList(sender)
 		respondToBootstrapRequest(conn, msgType, nil)
 	default:
-		// log.Println("Invalid message type")
+		// // log.Println("Invalid message type")
 		msgType = types.MessageTypeUnknown
 		respondToBootstrapRequest(conn, msgType, nil)
 	}
@@ -110,17 +109,17 @@ func StartBootstrapServer(bNode NodeAddress) {
 	bootstrapAddress := bNode.GetAddress()
 	listener, err := net.Listen("tcp", bootstrapAddress)
 	if err != nil {
-		log.Println("Error listening:", err)
+		// log.Println("Error listening:", err)
 		return
 	}
 	defer listener.Close()
 
-	log.Println("Bootstrap node listening on port", bNode.Port)
+	// log.Println("Bootstrap node listening on port", bNode.Port)
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println("Error accepting connection:", err)
+			// log.Println("Error accepting connection:", err)
 			continue
 		}
 		go handleBootstrapQuery(conn)

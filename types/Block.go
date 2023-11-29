@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -20,7 +19,7 @@ func (b *Block) RecalculateBlockHash() (string, []byte) {
 }
 
 // Function to create a new block
-func CreateBlock(transactions TransactionList, previousBlockHash string, height int) Block {
+func CreateNewBlock(transactions TransactionList, previousBlockHash string, height int, diffTarget int) Block {
 	// Build Merkle tree from transactions
 	merkleTree := NewMerkleTree(transactions)
 
@@ -30,6 +29,7 @@ func CreateBlock(transactions TransactionList, previousBlockHash string, height 
 		Height:            height,
 		MerkleRootHash:    merkleTree.MerkleRoot(),
 		Timestamp:         time.Now(),
+		DifficultyTarget:  diffTarget,
 	}
 
 	body := BlockBody{
@@ -57,20 +57,20 @@ func (b Block) IsTransactionListTampered() bool {
 
 // Function to display the block
 func (b Block) Display() {
-	fmt.Println("Block Header:")
-	fmt.Printf("Previous Block Hash: %s\n", b.Header.PreviousBlockHash)
-	fmt.Printf("Nonce: %d\n", b.Header.Nonce)
-	fmt.Printf("Height: %d\n", b.Header.Height)
-	// fmt.Printf("Block Hash: %s\n", b.Header.BlockHash)
-	fmt.Printf("Merkle Root Hash: %s\n", b.Header.MerkleRootHash)
-	fmt.Printf("Timestamp: %s\n", b.Header.Timestamp.String())
+	// fmt.Println("Block Header:")
+	// fmt.Printf("Previous Block Hash: %s\n", b.Header.PreviousBlockHash)
+	// fmt.Printf("Nonce: %d\n", b.Header.Nonce)
+	// fmt.Printf("Height: %d\n", b.Header.Height)
+	// // fmt.Printf("Block Hash: %s\n", b.Header.BlockHash)
+	// fmt.Printf("Merkle Root Hash: %s\n", b.Header.MerkleRootHash)
+	// fmt.Printf("Timestamp: %s\n", b.Header.Timestamp.String())
 
-	fmt.Println("\nBlock Transactions:")
-	for _, tx := range b.Body.Transactions.Transactions {
-		fmt.Printf("Transaction Value: %s\n", tx.Value)
-		fmt.Printf("Transaction Hash: %s\n", tx.Hash) // Update to display the new hash
-	}
-	fmt.Println()
+	// fmt.Println("\nBlock Transactions:")
+	// for _, tx := range b.Body.Transactions.Transactions {
+	// 	fmt.Printf("Transaction Value: %s\n", tx.Value)
+	// 	fmt.Printf("Transaction Hash: %s\n", tx.Hash) // Update to display the new hash
+	// }
+	// fmt.Println()
 }
 
 // Function to recalculate Merkle Root Hash based on current block transactions

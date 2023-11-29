@@ -1,7 +1,6 @@
 package client
 
 import (
-	"log"
 	"math/rand"
 	"time"
 
@@ -47,21 +46,41 @@ func handleBootstrapServer() {
 func StartClient() {
 	// Start handling bootstrap server node
 	go handleBootstrapServer()
+	// selfNodeServerPort := configuration.GetSelfServerAddress().Port
+	// if selfNodeServerPort != 0 {
+	// 	go func() {
+	// 		for {
+	// 			// Wait for 10 seconds
+	// 			time.Sleep(10000 * time.Millisecond)
+
+	// 			// Display P2P Network
+	// 			propagation.GetP2PNetwork()
+
+	// 			// log.Println("Returned from DisplayP2PNetwork()")
+	// 		}
+	// 	}()
+	// }
+
+	// go CreateArbitraryTransactions()
 
 	// Normal execution of the client
 	for {
 		// Wait for ten seconds. Then send arbitrary transaction to all nodes
-		// log.Println("Waiting for one seconds")
-		time.Sleep(30000 * time.Millisecond)
-		// Check if there are any neighbours
-		currentNeighbours, currentConnectionsList := nodestate.ReadCurrentConnections("client.go: 29")
-		if currentNeighbours == 0 {
-			log.Println("No neighbours to send arbitrary transaction to")
-			continue
-		}
-		// Log the current connections list
-		log.Println("Current connections list:", currentConnectionsList.GetNodeConnections())
+		// // log.Println("Sleeping for three seconds")
+		// time.Sleep(3000 * time.Millisecond)
+		// // // log.Print("Awake")
+		// // Check if there are any neighbours
+		// currentNeighbours, _ := nodestate.ReadCurrentConnections("client.go: 66")
+		// // // log.Println("Raed current connections")
+		// if currentNeighbours == 0 {
+		// 	// // log.Println("No neighbours to send arbitrary transaction to")
+		// 	continue
+		// }
+		// // log the current connections list
+		// // log.Println("Current connections list:", currentConnectionsList.GetNodeConnections())
 		// Send arbitrary transaction to all nodes
 		// propagation.SendArbitraryTransactionToAllNodes(currentConnectionsList)
+
+		StartCreateBlocks()
 	}
 }

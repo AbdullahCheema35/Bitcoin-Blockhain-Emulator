@@ -21,6 +21,7 @@ var (
 	selfBootstrapAddress types.NodeAddress
 	bootstrapNodeAddress types.NodeAddress
 	isSelfBootstrapNode  bool
+	difficultyTarget     int = 4
 )
 
 func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNodeAddress types.NodeAddress, _isSelfBootstrapNode bool) {
@@ -39,6 +40,8 @@ func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNode
 	gob.Register(types.Block{})
 	// Register type BlockChain
 	gob.Register(types.BlockChain{})
+	// Register type TopologyRequest
+	gob.Register(types.TopologyRequest{})
 
 	// Seed random number generator
 	rand.Seed(time.Now().UnixNano())
@@ -79,4 +82,8 @@ func GetMaxTransactionsInBlock() int {
 
 func GetMinTransactionsInBlock() int {
 	return minTransactionsInBlock
+}
+
+func GetDifficultyTarget() int {
+	return difficultyTarget
 }

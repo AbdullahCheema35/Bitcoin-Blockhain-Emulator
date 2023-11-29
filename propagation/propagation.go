@@ -43,9 +43,9 @@ import (
 // 	for _, nodeConn := range connectionsList.GetNodeConnections() {
 // 		isMessageSent, transactionData := sendArbitraryTransactionToNode(nodeConn)
 // 		if !isMessageSent {
-// 			log.Printf("Could not send arbitrary transaction %v to %v\n", transactionData, nodeConn.Node.GetAddress())
+// 			// log.Printf("Could not send arbitrary transaction %v to %v\n", transactionData, nodeConn.Node.GetAddress())
 // 		} else {
-// 			log.Printf("Sent arbitrary transaction %v to %v\n", transactionData, nodeConn.Node.GetAddress())
+// 			// log.Printf("Sent arbitrary transaction %v to %v\n", transactionData, nodeConn.Node.GetAddress())
 // 		}
 // 	}
 // }
@@ -56,7 +56,29 @@ func broadcastMessage(message types.Message, receivedFrom types.NodeAddress) {
 	for _, nodeConn := range connectionsList.GetNodeConnections() {
 		if nodeConn.Node != receivedFrom {
 			conn := nodeConn.Conn
-			comm.SendMessage(conn, message)
+			isMessageSent := comm.SendMessage(conn, message)
+			if !isMessageSent {
+				// log.Printf("Could not send message %v to %v\n", message.Body, nodeConn.Node.GetAddress())
+			} else {
+				// log.Printf("Sent message %v to %v\n", message.Body, nodeConn.Node.GetAddress())
+			}
+		}
+	}
+}
+
+func sendResponse(message types.Message, receivedFrom types.NodeAddress) {
+	// send to the node from which the request was received
+	_, connectionsList := nodestate.ReadCurrentConnections("")
+	for _, nodeConn := range connectionsList.GetNodeConnections() {
+		if nodeConn.Node == receivedFrom {
+			conn := nodeConn.Conn
+			isMessageSent := comm.SendMessage(conn, message)
+			if !isMessageSent {
+				// log.Printf("Could not send response %v to %v\n", message.Body, nodeConn.Node.GetAddress())
+			} else {
+				// log.Printf("Sent response %v to %v\n", message.Body, nodeConn.Node.GetAddress())
+			}
+			return
 		}
 	}
 }
@@ -104,7 +126,7 @@ func SendBlockChainResponse(blockChain types.BlockChain, receivedFrom types.Node
 	// Get self server address
 	selfAddr := configuration.GetSelfServerAddress()
 	message := comm.CreateMessage(selfAddr, types.MessageTypeBlockChainResponse, blockChain)
-	broadcastMessage(message, receivedFrom)
+	sendResponse(message, receivedFrom)
 }
 
 func InitiateTopologyRequest() types.TopologyRequest {
@@ -116,12 +138,15 @@ func InitiateTopologyRequest() types.TopologyRequest {
 
 	_, currentConns := nodestate.ReadCurrentConnections("")
 
+	peersList := types.NewNodesList()
+
 	// Get this node's peers and add them to the list
 	for _, nodeConn := range currentConns.GetNodeConnections() {
 		nodesFound.AddNode(nodeConn.Node)
+		peersList.AddNode(nodeConn.Node)
 	}
 
-	networkList := types.NewNetworkList(selfAddr, nodesFound)
+	networkList := types.NewNetworkList(selfAddr, peersList)
 
 	originList := types.NewNodesList()
 	originList.AddNode(selfAddr)
@@ -144,9 +169,14 @@ func BroadcastTopologyRequest(topologyRequest types.TopologyRequest, toSendPeers
 	// Send to all the peers except the ones already present in the topology request
 	_, connectionsList := nodestate.ReadCurrentConnections("")
 	for _, nodeConn := range connectionsList.GetNodeConnections() {
-		if !toSendPeersList.ContainsNode(nodeConn.Node) {
+		if toSendPeersList.ContainsNode(nodeConn.Node) {
 			conn := nodeConn.Conn
-			comm.SendMessage(conn, message)
+			isMessageSent := comm.SendMessage(conn, message)
+			if !isMessageSent {
+				// log.Printf("Line 162: Could not send topology request to %s\n", nodeConn.Node.GetAddress())
+			} else {
+				// log.Printf("Line 164: Sent topology request to %s\n", nodeConn.Node.GetAddress())
+			}
 		}
 	}
 }
@@ -162,14 +192,27 @@ func SendTopologyResponse(topologyRequest types.TopologyRequest, receivedFrom ty
 	for _, nodeConn := range connectionsList.GetNodeConnections() {
 		if nodeConn.Node == receivedFrom {
 			conn := nodeConn.Conn
-			comm.SendMessage(conn, message)
+			isMessageSent := comm.SendMessage(conn, message)
+			if !isMessageSent {
+				// log.Printf("Line 183: Could not send topology response to %s\n", nodeConn.Node.GetAddress())
+			} else {
+				// log.Printf("Line 185: Sent topology response to %s\n", nodeConn.Node.GetAddress())
+			}
+			return
 		}
 	}
+
+	// log.Println("Line 191: Couldn't send topology response received from", receivedFrom.GetAddress())
 }
 
-func DisplayP2PNetwork() {
+func GetP2PNetwork() []types.NetworkList {
+	topologyChan := nodestate.InitTopologyChan()
+
 	// Display the current P2P network connections
 	topologyRequest := InitiateTopologyRequest()
+
+	// Display waiting message
+	// fmt.Println("\n\n\n...waiting")
 
 	nodesFound := topologyRequest.NodesFound
 	networkList := topologyRequest.ThisNodePeers
@@ -178,9 +221,12 @@ func DisplayP2PNetwork() {
 
 	listOfNetworkList = append(listOfNetworkList, networkList)
 
-	topologyChan := nodestate.InitTopologyChan()
+	// log.Println("P2P: Before the loop")
 
-	for {
+	// log.Println("P2P: len(nodesFound.GetNodes()) =", len(nodesFound.GetNodes()))
+	// log.Println("P2P: len(listOfNetworkList) =", len(listOfNetworkList))
+
+	for len(nodesFound.GetNodes()) != len(listOfNetworkList) {
 		select {
 		case topologyRequest := <-topologyChan:
 			newNodesFound := topologyRequest.NodesFound
@@ -190,15 +236,21 @@ func DisplayP2PNetwork() {
 			networkList := topologyRequest.ThisNodePeers
 
 			listOfNetworkList = append(listOfNetworkList, networkList)
-			if len(nodesFound.GetNodes()) == len(listOfNetworkList) {
-				// All nodes have been found
-				// Display the network
-				nodestate.CloseTopologyChan()
-				break
-			}
 		default:
 			// Sleep for 500ms
 			time.Sleep(500 * time.Millisecond)
 		}
+		// log.Println("P2P: len(nodesFound.GetNodes()) =", len(nodesFound.GetNodes()), "nodes: ", nodesFound.GetNodes())
+		// log.Println("P2P: len(listOfNetworkList) =", len(listOfNetworkList))
+		// for _, networkList := range listOfNetworkList {
+		// 	// fmt.Println("P2P: networkList.Src =", networkList.Src.GetAddress())
+		// }
 	}
+
+	// log.Println("P2P: After the loop")
+
+	// close the channel
+	nodestate.CloseTopologyChan()
+
+	return listOfNetworkList
 }

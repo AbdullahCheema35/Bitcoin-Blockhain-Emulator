@@ -19,7 +19,7 @@ type BlockHeader struct {
 
 // Function to calculate the hash of the block
 func (bh *BlockHeader) RecalculateBlockHeaderHash() (string, []byte) {
-	hashInput := bh.PreviousBlockHash + fmt.Sprintf("%d", bh.Nonce) + fmt.Sprintf("%d", bh.Timestamp.UnixMicro()) + bh.MerkleRootHash + fmt.Sprintf("%d", bh.DifficultyTarget)
+	hashInput := bh.PreviousBlockHash + fmt.Sprintf("%d", bh.Nonce) + bh.MerkleRootHash + fmt.Sprintf("%d", bh.DifficultyTarget) + fmt.Sprintf("%d", bh.Height) + fmt.Sprintf("%d", bh.Timestamp.UnixNano())
 	hash := sha256.Sum256([]byte(hashInput))
 	return hex.EncodeToString(hash[:]), hash[:]
 }

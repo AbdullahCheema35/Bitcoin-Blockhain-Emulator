@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"log"
 	"net"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
@@ -33,12 +32,12 @@ func getExistingNodesFromBootstrapNode(selfNode NodeAddress, conn net.Conn) inte
 	// Handle the received message
 	switch msg.Header.Type {
 	case types.MessageTypeBootstrapConnectionResponse:
-		// log.Println("Received bootstrap connection response")
+		// // log.Println("Received bootstrap connection response")
 		existingNodesList := msg.Body.(types.NodesList)
 		existingNodesList.RemoveNode(selfNode)
 		return existingNodesList
 	default:
-		log.Println("Invalid message type")
+		// log.Println("Invalid message type")
 		return nil
 	}
 }
@@ -48,10 +47,10 @@ func connectToBootstrapNode(bootstrapNode NodeAddress) net.Conn {
 	bootstrapAddress := bootstrapNode.GetAddress()
 	conn, err := net.Dial("tcp", bootstrapAddress)
 	if err != nil {
-		log.Println("Couldn't connect to bootstrap node:", err)
+		// log.Println("Couldn't connect to bootstrap node:", err)
 		return nil
 	} else {
-		// log.Println("Connected to bootstrap node")
+		// // log.Println("Connected to bootstrap node")
 		return conn
 	}
 }
@@ -104,10 +103,10 @@ func PingBootstrapServer(bootstrapNode NodeAddress) bool {
 	// Handle the received message
 	switch msg.Header.Type {
 	case types.MessageTypeBootstrapPingResponse:
-		// log.Println("Received bootstrap connection response")
+		// // log.Println("Received bootstrap connection response")
 		return true
 	default:
-		log.Println("Invalid message type")
+		// log.Println("Invalid message type")
 		return false
 	}
 }

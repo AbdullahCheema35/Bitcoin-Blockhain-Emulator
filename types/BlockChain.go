@@ -18,6 +18,14 @@ func NewBlockChain() BlockChain {
 	}
 }
 
+func (bchain *BlockChain) Display() {
+	currentNode := bchain.LatestNode
+	for currentNode != nil {
+		currentNode.Block.Display()
+		currentNode = currentNode.PrevNode
+	}
+}
+
 // AddBlock adds a block to the blockchain, if the height of the block is greater than the height of the latest block in the blockchain
 func (bchain *BlockChain) AddBlock(b Block) bool {
 	if bchain.LatestNode == nil {

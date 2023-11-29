@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
@@ -25,10 +24,10 @@ func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
 	switch message.Header.Type {
 	case types.MessageTypeConnectionRequest:
 		sender := message.Header.Sender
-		// log.Println("Received a connection request from", sender.GetAddress())
+		// // log.Println("Received a connection request from", sender.GetAddress())
 		return true, sender
 	default:
-		// log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
+		// // log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
 		return false, types.NodeAddress{}
 	}
 }
@@ -37,7 +36,7 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 	maxNeighbours := configuration.GetMaxNeighbours()
 	currentNeighbours, currentConnections := nodestate.ReadCurrentConnections("")
 	if currentNeighbours >= maxNeighbours || currentConnections.ExistsAddress(clientNodeAddress) {
-		// log.Println("Maximum neighbours reached or client node already exists in the current connections list")
+		// // log.Println("Maximum neighbours reached or client node already exists in the current connections list")
 
 		messageType := types.MessageTypeFailure
 		sender := configuration.GetSelfServerAddress()
@@ -64,8 +63,8 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 		message := types.NewMessage(messageHeader, nil)
 		comm.SendMessage(conn, message)
 
-		// log.Println("Current neighbours:", len(currentConnections.GetNodeConnections()))
-		// log.Println("Current connections:", currentConnections.GetNodeConnections())
+		// // log.Println("Current neighbours:", len(currentConnections.GetNodeConnections()))
+		// // log.Println("Current connections:", currentConnections.GetNodeConnections())
 		connectionSuccess, connectionClosed := success, true
 		return connectionSuccess, connectionClosed
 	}
@@ -77,28 +76,28 @@ func respondToConnectionRequest(conn net.Conn) (bool, bool) {
 
 	isRequestSuccess, clientNodeAddress = receiveClientRequest(conn)
 	if !isRequestSuccess {
-		log.Println("Unsuccessful connection request received from", clientNodeAddress.GetAddress())
+		// log.Println("Unsuccessful connection request received from", clientNodeAddress.GetAddress())
 		return false, false
 	} else {
-		log.Println("Successful connection request received from", clientNodeAddress.GetAddress())
+		// log.Println("Successful connection request received from", clientNodeAddress.GetAddress())
 	}
 
 	isConnectionSuccess, isConnectionClosed := sendResponseToClient(conn, clientNodeAddress)
 	if !isConnectionSuccess {
-		log.Println("Unsuccessful connection response sent to", clientNodeAddress.GetAddress())
+		// log.Println("Unsuccessful connection response sent to", clientNodeAddress.GetAddress())
 	} else {
-		log.Println("Successful connection response sent to", clientNodeAddress.GetAddress())
+		// log.Println("Successful connection response sent to", clientNodeAddress.GetAddress())
 	}
 	return isConnectionSuccess, isConnectionClosed
 }
 
 func handleConnection(conn net.Conn) {
-	// log.Println("Received a connection request")
+	// // log.Println("Received a connection request")
 
 	_, isConnectionClosed := respondToConnectionRequest(conn)
 
 	if !isConnectionClosed {
-		log.Println("Closing connection. Line 97 of server.go")
+		// log.Println("Closing connection. Line 97 of server.go")
 		conn.Close()
 	}
 	// Now we can start listening for messages from the Client Node
@@ -109,17 +108,17 @@ func StartServer() {
 	serverAddress := serverNode.GetAddress()
 	listener, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		log.Println("Error listening:", err)
+		// log.Println("Error listening:", err)
 		return
 	}
 	defer listener.Close()
 
-	log.Println("Server Node listening on port", serverNode.Port)
+	// log.Println("Server Node listening on port", serverNode.Port)
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println("Error accepting connection:", err)
+			// log.Println("Error accepting connection:", err)
 			continue
 		}
 		go handleConnection(conn)
