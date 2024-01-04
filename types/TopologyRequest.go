@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // NetworkList represents a list of network connections between nodes
 type NetworkList struct {
 	Src NodeAddress
@@ -31,12 +33,12 @@ func NewTopologyRequest(origin NodesList, nodesFound NodesList, thisNodePeers Ne
 // Display prints a text-based UI showing the connections of every node in the network list
 func (nl NetworkList) Display() {
 	// Display the connections
-	// fmt.Printf("Node %s\n", nl.Src.GetAddress())
-	// fmt.Println("+- Connections:")
+	fmt.Printf("Node %s\n", nl.Src.GetAddress())
+	fmt.Println("+- Connections:")
 
 	for _, node := range nl.Dst.GetNodes() {
 		if node != nl.Src {
-			// fmt.Printf("   +- %s\n", node.GetAddress())
+			fmt.Printf("   +- %s\n", node.GetAddress())
 		}
 	}
 }
