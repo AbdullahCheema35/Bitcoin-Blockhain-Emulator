@@ -21,8 +21,9 @@ func createRandomString() string {
 	return transactionStr
 }
 
-func CreateRandomTransaction() {
+func CreateRandomTransaction(counter int) {
 	transactionStr := createRandomString()
+	transactionStr = string(counter) + "-" + transactionStr
 	isAdded, newTx := nodestate.AddTransactionToPool(transactionStr)
 	if isAdded {
 		// Flood the transaction to all the peers except the one from which the transaction was received
