@@ -17,7 +17,7 @@ func broadcastMessage(message types.Message, receivedFrom types.NodeAddress) {
 			conn := nodeConn.Conn
 			isMessageSent := comm.SendMessage(conn, message)
 			if !isMessageSent {
-				log.Printf("Could not send message %v to %v\n", message.Body, nodeConn.Node.GetAddress())
+				log.Printf("Could not send message of type %v to %v\n", message.Header.Type, nodeConn.Node.GetAddress())
 			} else {
 				log.Printf("Sent message %v to %v\n", message.Body, nodeConn.Node.GetAddress())
 			}

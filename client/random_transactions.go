@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"math/rand"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
@@ -23,7 +24,7 @@ func createRandomString() string {
 
 func CreateRandomTransaction(counter int) {
 	transactionStr := createRandomString()
-	transactionStr = string(counter) + "-" + transactionStr
+	transactionStr = fmt.Sprintf("%d", counter) + "-" + transactionStr
 	isAdded, newTx := nodestate.AddTransactionToPool(transactionStr)
 	if isAdded {
 		// Flood the transaction to all the peers except the one from which the transaction was received

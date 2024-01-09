@@ -17,7 +17,7 @@ func AddNewNodeConnection(ncl *ConnectionsList, nc NodeConnection, str string) b
 	success := ncl.AddNodeConnection(nc)
 	if success {
 		// log.Printf("AddNewNodeConnection -> %s: Added new node connection with %v\n", str, nc.Node.GetAddress())
-		go listenForMessages(nc)
+		go ListenForMessages(nc)
 	} else {
 		// log.Printf("AddNewNodeConnection -> %s: Failed to add new node connection with %v\n", str, nc.Node.GetAddress())
 		nc.Conn.Close()
