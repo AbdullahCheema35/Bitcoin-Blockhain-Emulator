@@ -25,18 +25,18 @@ func connectToNode(node types.NodeAddress) net.Conn {
 	return conn
 }
 
-func sendConnectionRequestToNode(node types.NodeAddress, conn net.Conn) bool {
+func sendConnectionRequestToNode(nc types.NodeConnection) bool {
 	messageType := types.MessageTypeConnectionRequest
 	sender := configuration.GetSelfServerAddress()
 	messageHeader := types.NewMessageHeader(messageType, sender)
 	message := types.NewMessage(messageHeader, nil)
 
-	isMessageSent := comm.SendMessage(conn, message)
+	isMessageSent := comm.SendMessage(nc, message)
 	return isMessageSent
 }
 
-func receiveConnectionResponseFromNode(conn net.Conn) bool {
-	isMessageReceived, message := comm.ReceiveMessage(conn)
+func receiveConnectionResponseFromNode(nc types.NodeConnection) bool {
+	isMessageReceived, message := comm.ReceiveMessage(nc)
 	if !isMessageReceived {
 		return false
 	}
@@ -46,7 +46,7 @@ func receiveConnectionResponseFromNode(conn net.Conn) bool {
 		return true
 	default:
 		// // log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
-		conn.Close()
+		nc.Conn.Close()
 		return false
 	}
 }
@@ -57,7 +57,7 @@ func ListenForMessages(nc types.NodeConnection) {
 	// log.Println("Listening for messages from", nc.Node.GetAddress())
 
 	for {
-		err, message := comm.ReceiveMessage(conn)
+		err, message := comm.ReceiveMessage(nc)
 		if !err {
 			// It means connection is broken/lost
 			conn.Close()

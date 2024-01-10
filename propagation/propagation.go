@@ -14,8 +14,7 @@ func broadcastMessage(message types.Message, receivedFrom types.NodeAddress) {
 	_, connectionsList := nodestate.ReadCurrentConnections("")
 	for _, nodeConn := range connectionsList.GetNodeConnections() {
 		if nodeConn.Node != receivedFrom {
-			conn := nodeConn.Conn
-			isMessageSent := comm.SendMessage(conn, message)
+			isMessageSent := comm.SendMessage(nodeConn, message)
 			if !isMessageSent {
 				log.Printf("Could not send message of type %v to %v\n", message.Header.Type, nodeConn.Node.GetAddress())
 			} else {
@@ -29,8 +28,7 @@ func sendResponse(message types.Message, receivedFrom types.NodeAddress) {
 	_, connectionsList := nodestate.ReadCurrentConnections("")
 	for _, nodeConn := range connectionsList.GetNodeConnections() {
 		if nodeConn.Node == receivedFrom {
-			conn := nodeConn.Conn
-			isMessageSent := comm.SendMessage(conn, message)
+			isMessageSent := comm.SendMessage(nodeConn, message)
 			if !isMessageSent {
 				log.Printf("Could not send response %v to %v\n", message.Body, nodeConn.Node.GetAddress())
 			} else {
@@ -97,8 +95,7 @@ func BroadcastTopologyRequest(topologyRequest types.TopologyRequest, toSendPeers
 	_, connectionsList := nodestate.ReadCurrentConnections("")
 	for _, nodeConn := range connectionsList.GetNodeConnections() {
 		if toSendPeersList.ContainsNode(nodeConn.Node) {
-			conn := nodeConn.Conn
-			isMessageSent := comm.SendMessage(conn, message)
+			isMessageSent := comm.SendMessage(nodeConn, message)
 			if !isMessageSent {
 				log.Printf("Could not send topology request to %s\n", nodeConn.Node.GetAddress())
 			} else {
@@ -115,8 +112,7 @@ func SendTopologyResponse(topologyRequest types.TopologyRequest, receivedFrom ty
 	_, connectionsList := nodestate.ReadCurrentConnections("")
 	for _, nodeConn := range connectionsList.GetNodeConnections() {
 		if nodeConn.Node == receivedFrom {
-			conn := nodeConn.Conn
-			isMessageSent := comm.SendMessage(conn, message)
+			isMessageSent := comm.SendMessage(nodeConn, message)
 			if !isMessageSent {
 				log.Printf("Could not send topology response to %s\n", nodeConn.Node.GetAddress())
 			} else {
