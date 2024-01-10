@@ -24,10 +24,13 @@ func createRandomString() string {
 
 func CreateRandomTransaction(counter int) {
 	transactionStr := createRandomString()
-	transactionStr = fmt.Sprintf("%d", counter) + "-" + transactionStr
+	selfPort := configuration.GetSelfServerAddress().Port
+	transactionStr = fmt.Sprintf("%d--%d", counter, selfPort) + "-" + transactionStr
 	isAdded, newTx := nodestate.AddTransactionToPool(transactionStr)
 	if isAdded {
 		// Flood the transaction to all the peers except the one from which the transaction was received
+		// Temp solution -------------------------------------------------------
+		nodestate.AddTxToTempPool(newTx)
 		propagation.BroadcastTransaction(newTx, configuration.GetSelfServerAddress())
 	}
 }

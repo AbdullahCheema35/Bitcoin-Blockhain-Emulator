@@ -1,8 +1,6 @@
 package propagation
 
 import (
-	"log"
-
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/mining"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/nodestate"
@@ -13,7 +11,9 @@ func HandleReceivedTransaction(transaction types.Transaction, receivedFrom types
 	isAdded, addedTx := nodestate.AddTransactionToPool(transaction.Value)
 
 	if isAdded {
-		log.Println("Transaction added to the pool, broadcasting to peers.")
+		// Temp solution -------------------------------------------------------
+		nodestate.AddTxToTempPool(addedTx)
+		// log.Println("Transaction added to the pool, broadcasting to peers.")
 		BroadcastTransaction(addedTx, receivedFrom)
 	}
 }
@@ -22,18 +22,18 @@ func HandleReceivedBlock(block types.Block, receivedFrom types.NodeAddress) {
 	returnType := mining.HandleNewBlock(block, receivedFrom)
 	switch returnType {
 	case types.DoNothing:
-		log.Println("No action required for the received block.")
+		// log.Println("No action required for the received block.")
 	case types.InitiateBroadcastBlockChainRequest:
-		log.Println("Initiating broadcast of the block chain request.")
+		// log.Println("Initiating broadcast of the block chain request.")
 		BroadcastBlockChainRequest()
 	case types.InitiateBroadcastBlock:
-		log.Println("Initiating broadcast of the received block.")
+		// log.Println("Initiating broadcast of the received block.")
 		BroadcastBlock(block, receivedFrom)
 	}
-
 	// Display all the blocks
-	bchain := nodestate.ReadBlockChain()
-	bchain.Display()
+	// bchain := nodestate.ReadBlockChain()
+	// bchain.Display()
+
 }
 
 func HandleReceivedBlockChain(blockChain types.BlockChain, receivedFrom types.NodeAddress) {

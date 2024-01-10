@@ -89,6 +89,17 @@ func main() {
 	// select {}
 	// menu()
 	periodicallyGenerateRandomTransaction()
+
+	// Temp Solution ----------------------------------------------------
+	// periodicallyDisplayTransactionPool()
+}
+
+func periodicallyDisplayTransactionPool() {
+	for {
+		txPool := nodestate.ReadTempTxPool()
+		txPool.DisplayValueFromPool()
+		time.Sleep(10000 * time.Millisecond)
+	}
 }
 
 func displayBlockChain() {

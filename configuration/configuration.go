@@ -21,7 +21,7 @@ var (
 	selfBootstrapAddress types.NodeAddress
 	bootstrapNodeAddress types.NodeAddress
 	isSelfBootstrapNode  bool
-	difficultyTarget     int = 4
+	difficultyTarget     int = 16
 )
 
 func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNodeAddress types.NodeAddress, _isSelfBootstrapNode bool) {

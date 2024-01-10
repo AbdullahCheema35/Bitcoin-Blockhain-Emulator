@@ -56,6 +56,17 @@ func (b Block) IsTransactionListTampered() bool {
 	return recalculatedMerkleRoot != b.Header.MerkleRootHash
 }
 
+func (b Block) DisplayHeader() {
+	fmt.Println("Block Header:")
+	fmt.Printf("PBH: %s\n", b.Header.PreviousBlockHash)
+	// fmt.Printf("Nonce: %d\n", b.Header.Nonce)
+	fmt.Printf("Height: %d\n", b.Header.Height)
+	fmt.Printf("Block Hash: %s\n", b.BlockHash)
+	// fmt.Printf("Merkle Root Hash: %s\n", b.Header.MerkleRootHash)
+	// fmt.Printf("Timestamp: %s\n", b.Header.Timestamp.String())
+	fmt.Println("------------------------------")
+}
+
 // Function to display the block
 func (b Block) Display() {
 	// fmt.Println("Block Header:")
