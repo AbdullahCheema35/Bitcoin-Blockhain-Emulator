@@ -33,6 +33,7 @@ func handleBootstrapServer() {
 
 		// If the number of neighbours is less than the minimum number of neighbours, then connect to the network
 		if currentNeighbours < configuration.GetMinNeighbours() {
+			// log.Println("Number of neighbours is less than the minimum number of neighbours. Connecting to the network...")
 			connection.ConnectWithNetwork_SafeMode()
 		}
 

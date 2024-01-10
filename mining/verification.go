@@ -25,7 +25,7 @@ func VerifyBlock(b types.Block) types.ReturnType {
 		return types.MerkleRootFailed
 	}
 
-	log.Println("Block verification successful!")
+	// log.Println("Block verification successful!")
 	return types.BlockVerificationSuccessful
 }
 
@@ -51,7 +51,7 @@ func VerifyBlockChain(bchain types.BlockChain) (types.ReturnType, *types.BlockNo
 		}
 
 		prevHeight = currentNode.Block.Header.Height
-		prevBlockHash = currentNode.Block.BlockHash
+		prevBlockHash = currentNode.Block.Header.PreviousBlockHash
 		prevNode = currentNode
 		currentNode = currentNode.PrevNode
 	}

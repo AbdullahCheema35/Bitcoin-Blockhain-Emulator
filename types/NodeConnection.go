@@ -16,8 +16,8 @@ type NodeConnection struct {
 // NewNodeConnection creates a new NodeConnection instance
 func NewNodeConnection(node NodeAddress, conn net.Conn) NodeConnection {
 	// Create channels
-	enc_chan := make(chan *gob.Encoder)
-	dec_chan := make(chan *gob.Decoder)
+	enc_chan := make(chan *gob.Encoder, 1)
+	dec_chan := make(chan *gob.Decoder, 1)
 
 	encoder := gob.NewEncoder(conn)
 	decoder := gob.NewDecoder(conn)
