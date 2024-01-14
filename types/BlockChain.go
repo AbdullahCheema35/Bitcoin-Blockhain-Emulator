@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"log"
 )
 
 // BlockNode struct representing a node in the blockchain
@@ -26,7 +25,7 @@ func NewBlockChain() BlockChain {
 func (bchain *BlockChain) DisplayHeaderInfo() {
 	currentNode := bchain.LatestNode
 	if currentNode == nil {
-		log.Println("-----------------Blockchain is empty-----------------")
+		fmt.Println("-----------------Blockchain is empty-----------------")
 		return
 	}
 	fmt.Println("-----------------Blockchain Display Start-----------------")
@@ -40,7 +39,7 @@ func (bchain *BlockChain) DisplayHeaderInfo() {
 func (bchain *BlockChain) Display() {
 	currentNode := bchain.LatestNode
 	if currentNode == nil {
-		log.Println("-----------------Blockchain is empty-----------------")
+		fmt.Println("-----------------Blockchain is empty-----------------")
 		return
 	}
 	fmt.Println("-----------------Blockchain Display Start-----------------")

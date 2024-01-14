@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
@@ -37,7 +36,7 @@ func sendResponseToClient(nc types.NodeConnection) (bool, bool) {
 	maxNeighbours := configuration.GetMaxNeighbours()
 	currentNeighbours, currentConnections := nodestate.ReadCurrentConnections("")
 	if currentNeighbours >= maxNeighbours || currentConnections.ExistsAddress(nc.Node) {
-		log.Println("Maximum neighbours reached or client node already exists in the current connections list")
+		// log.Println("Maximum neighbours reached or client node already exists in the current connections list")
 
 		messageType := types.MessageTypeFailure
 		sender := configuration.GetSelfServerAddress()
@@ -87,7 +86,7 @@ func respondToConnectionRequest(nc types.NodeConnection) (bool, bool) {
 
 	isConnectionSuccess, isConnectionClosed := sendResponseToClient(nc)
 	if !isConnectionSuccess {
-		log.Println("Unsuccessful connection response sent to", clientNodeAddress.GetAddress())
+		// log.Println("Unsuccessful connection response sent to", clientNodeAddress.GetAddress())
 	} else {
 		// log.Println("Successful connection response sent to", clientNodeAddress.GetAddress())
 	}
@@ -109,7 +108,7 @@ func handleConnection(conn net.Conn) {
 	}
 
 	if new_nc.Conn == nil {
-		log.Panicln("Client Node Connection is nil, although everything went smooth")
+		// log.Panicln("Client Node Connection is nil, although everything went smooth")
 	}
 
 	// Now we can start listening for messages from the Client Node
@@ -121,17 +120,17 @@ func StartServer() {
 	serverAddress := serverNode.GetAddress()
 	listener, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		log.Panicln("Error listening:", err)
+		// log.Panicln("Error listening:", err)
 		return
 	}
 	defer listener.Close()
 
-	log.Println("Server Node listening on port", serverNode.Port)
+	// log.Println("Server Node listening on port", serverNode.Port)
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println("Error accepting connection:", err)
+			// log.Println("Error accepting connection:", err)
 			continue
 		}
 		go handleConnection(conn)
