@@ -16,7 +16,7 @@ func broadcastMessage(message types.Message, receivedFrom types.NodeAddress) {
 		if nodeConn.Node != receivedFrom {
 			isMessageSent := comm.SendMessage(nodeConn, message)
 			if !isMessageSent {
-				log.Printf("Could not send message of type %v to %v\n", message.Header.Type, nodeConn.Node.GetAddress())
+				// log.Printf("Could not send message of type %v to %v\n", message.Header.Type, nodeConn.Node.GetAddress())
 			} else {
 				// log.Printf("Sent message type %d to %v\n", message.Header.Type, nodeConn.Node.GetAddress())
 			}
@@ -30,7 +30,7 @@ func sendResponse(message types.Message, receivedFrom types.NodeAddress) {
 		if nodeConn.Node == receivedFrom {
 			isMessageSent := comm.SendMessage(nodeConn, message)
 			if !isMessageSent {
-				log.Printf("Could not send response %v to %v\n", message.Body, nodeConn.Node.GetAddress())
+				// log.Printf("Could not send response %v to %v\n", message.Body, nodeConn.Node.GetAddress())
 			} else {
 				// log.Printf("Sent response %v to %v\n", message.Body, nodeConn.Node.GetAddress())
 			}
@@ -97,7 +97,7 @@ func BroadcastTopologyRequest(topologyRequest types.TopologyRequest, toSendPeers
 		if toSendPeersList.ContainsNode(nodeConn.Node) {
 			isMessageSent := comm.SendMessage(nodeConn, message)
 			if !isMessageSent {
-				log.Printf("Could not send topology request to %s\n", nodeConn.Node.GetAddress())
+				// log.Printf("Could not send topology request to %s\n", nodeConn.Node.GetAddress())
 			} else {
 				// log.Printf("Sent topology request to %s\n", nodeConn.Node.GetAddress())
 			}
@@ -114,7 +114,7 @@ func SendTopologyResponse(topologyRequest types.TopologyRequest, receivedFrom ty
 		if nodeConn.Node == receivedFrom {
 			isMessageSent := comm.SendMessage(nodeConn, message)
 			if !isMessageSent {
-				log.Printf("Could not send topology response to %s\n", nodeConn.Node.GetAddress())
+				// log.Printf("Could not send topology response to %s\n", nodeConn.Node.GetAddress())
 			} else {
 				// log.Printf("Sent topology response to %s\n", nodeConn.Node.GetAddress())
 			}
@@ -145,7 +145,7 @@ func GetP2PNetwork() []types.NetworkList {
 			networkList := topologyRequest.ThisNodePeers
 			listOfNetworkList = append(listOfNetworkList, networkList)
 		default:
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(1000 * time.Millisecond)
 		}
 	}
 

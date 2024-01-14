@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/bootstrap"
@@ -87,8 +89,9 @@ func main() {
 
 	// Keep the program running
 	// select {}
-	// menu()
-	periodicallyGenerateRandomTransaction()
+	go periodicallyGenerateRandomTransaction()
+	Menu()
+	os.Exit(0)
 }
 
 // func periodicallyDisplayTransactionPool() {
@@ -122,104 +125,77 @@ func ClearScreen() {
 	}
 }
 
-func checkTransactionPool() {
-	for {
-		txPool := nodestate.ReadTransactionPool()
-		bchain := nodestate.ReadBlockChain()
-
-		// Traverse the transaction pool and check if any duplicate transactions
-
-		// Create mapping of transaction hash to transaction
-		// If a transaction hash already exists in the map, then it is a duplicate transaction
-		// If a transaction hash does not exist in the map, then add it to the map
-
-		txMap := make(map[string]types.Transaction)
-
-		for _, tx := range txPool.Transactions {
-			if _, ok := txMap[tx.Hash]; ok {
-				txPool.DisplayTransactionPool()
-				bchain.Display()
-				log.Fatalln("Duplicate transaction found in the transaction pool")
-			} else {
-				txMap[tx.Hash] = tx
-			}
-		}
-
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-
 func periodicallyGenerateRandomTransaction() {
 	counter := 0
 	for {
 		counter++
 		client.CreateRandomTransaction(counter)
+		sleepTime := configuration.GetTransactionSpeed()
 		// Sleep for 1 seconds
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(time.Duration(sleepTime) * time.Second)
 	}
 }
 
 func Menu() {
 	// Assuming blockchain is initialized and accessible
+	// transactions1 := types.TransactionList{
+	// 	Transactions: []types.Transaction{
+	// 		{Value: "Tx1", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx2", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx3", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c466   47abda7d648e971"},
+	// 		{Value: "Tx4", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx5", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx6", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 	},
+	// }
 
-	transactions1 := types.TransactionList{
-		Transactions: []types.Transaction{
-			{Value: "Tx1", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx2", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx3", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx4", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx5", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx6", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-		},
-	}
+	// transactions2 := types.TransactionList{
+	// 	Transactions: []types.Transaction{
+	// 		{Value: "Tx7", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx8", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx9", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx10", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx11", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 	},
+	// }
 
-	transactions2 := types.TransactionList{
-		Transactions: []types.Transaction{
-			{Value: "Tx7", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx8", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx9", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx10", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx11", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-		},
-	}
+	// transactions3 := types.TransactionList{
+	// 	Transactions: []types.Transaction{
+	// 		{Value: "Tx12", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx13", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx14", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 		{Value: "Tx15", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
+	// 	},
+	// }
 
-	transactions3 := types.TransactionList{
-		Transactions: []types.Transaction{
-			{Value: "Tx12", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx13", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx14", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-			{Value: "Tx15", Hash: "df1056b304b48a5090d0d43420cea4e8a70bfd9b30757c46647abda7d648e971"},
-		},
-	}
+	// // Create blocks using the CreateBlock function
+	// block1 := types.CreateNewBlock(transactions1, "0000000000000000000000000000000000000000000000000000000000000000", 1, 8)
+	// block2 := types.CreateNewBlock(transactions2, block1.BlockHash, 2, 8)
+	// block3 := types.CreateNewBlock(transactions3, block2.BlockHash, 3, 8)
 
-	// Create blocks using the CreateBlock function
-	block1 := types.CreateNewBlock(transactions1, "0000000000000000000000000000000000000000000000000000000000000000", 1, 8)
-	block2 := types.CreateNewBlock(transactions2, block1.BlockHash, 2, 8)
-	block3 := types.CreateNewBlock(transactions3, block2.BlockHash, 3, 8)
+	// // Create a blockchain and link the blocks
+	// blockchain := types.BlockChain{}
+	// node3 := &types.BlockNode{Block: block3, PrevNode: nil}
+	// node2 := &types.BlockNode{Block: block2, PrevNode: node3}
+	// node1 := &types.BlockNode{Block: block1, PrevNode: node2}
+	// blockchain.LatestNode = node1
 
-	// Create a blockchain and link the blocks
-	blockchain := types.BlockChain{}
-	node3 := &types.BlockNode{Block: block3, PrevNode: nil}
-	node2 := &types.BlockNode{Block: block2, PrevNode: node3}
-	node1 := &types.BlockNode{Block: block1, PrevNode: node2}
-	blockchain.LatestNode = node1
-
-	nodestate.SetBlockChain(blockchain)
+	// nodestate.SetBlockChain(blockchain)
 
 	var choice int
 
-	counter := 0
-
 	for {
+		fmt.Printf("Node Address: %s\n", configuration.GetSelfServerAddress().GetAddress())
 		fmt.Println("Menu:")
 		fmt.Println("1. Display Merkle Tree")
 		fmt.Println("2. Display Blockchain")
 		fmt.Println("3. ChangeBlock")
 		fmt.Println("4. Display Network List") // New option added
-		fmt.Println("6. Display Transaction Pool")
 		fmt.Println("5. Blockchain Configuration")
+		fmt.Println("6. Display Transaction Pool")
 		fmt.Println("7. BootStrap Nodes List")
-		fmt.Println("8. Exit")
+		fmt.Println("8. Create New Transaction")
+		fmt.Println("9. Exit")
 
 		fmt.Print("Enter your choice: ")
 		fmt.Scanln(&choice)
@@ -264,7 +240,7 @@ func Menu() {
 		case 5:
 			fmt.Println("------------------------------")
 			fmt.Println("                       ")
-			// blockchainConfiguration()
+			blockchainConfiguration()
 			fmt.Println("------------------------------")
 			fmt.Println("                       ")
 		case 7:
@@ -276,6 +252,16 @@ func Menu() {
 			}
 			fmt.Println("------------------------------")
 			fmt.Println("                       ")
+		case 8:
+			fmt.Println("------------------------------")
+			fmt.Println("                       ")
+			client.CreateTransaction()
+			fmt.Println("------------------------------")
+			fmt.Println("                       ")
+		case 9:
+			fmt.Println("------------------------------")
+			fmt.Println("---------------Exiting---------------")
+			return
 		default:
 			fmt.Println("------------------------------")
 			fmt.Println("                       ")
@@ -283,14 +269,12 @@ func Menu() {
 			fmt.Println("------------------------------")
 			fmt.Println("                       ")
 		}
-		counter++
-		client.CreateRandomTransaction(counter)
 	}
 }
 
 func displayNetworkLists(nl []types.NetworkList) {
 	for _, networkList := range nl {
-		// fmt.Println("------------------------------")
+		fmt.Println("------------------------------")
 		// fmt.Println("                       ")
 		// fmt.Println("Source Node:")
 		// fmt.Println(networkList.SourceNode)
@@ -298,5 +282,68 @@ func displayNetworkLists(nl []types.NetworkList) {
 		// networkList.DestinationNodes.Display()
 		// fmt.Println("                       ")
 		networkList.Display()
+	}
+
+}
+
+func blockchainConfiguration() {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Println("\nBlockchain Configuration Menu")
+		fmt.Println("0. Set Difficulty Target (Current: ", configuration.GetDifficultyTarget())
+		fmt.Printf("1. Set Minimum Neighbours (Current: %d)\n", configuration.GetMinNeighbours())
+		fmt.Printf("2. Set Maximum Neighbours (Current: %d)\n", configuration.GetMaxNeighbours())
+		fmt.Printf("3. Set Max Seconds Ping Delay (Current: %d)\n", configuration.GetMaxSecondsPingDelay())
+		fmt.Printf("4. Set Max Transactions In Block (Current: %d)\n", configuration.GetMaxTransactionsInBlock())
+		fmt.Printf("5. Set Min Transactions In Block (Current: %d)\n", configuration.GetMinTransactionsInBlock())
+		fmt.Printf("7. Set Transaction Speed (Current: %d)\n", configuration.GetTransactionSpeed())
+		fmt.Println("6. Return to Main Menu")
+
+		fmt.Print("Enter your choice: ")
+		choiceStr, _ := reader.ReadString('\n')
+		choice, err := strconv.Atoi(strings.TrimSpace(choiceStr))
+		if err != nil {
+			fmt.Println("Invalid input. Please enter a number.")
+			continue
+		}
+
+		if choice == 6 {
+			break
+		}
+
+		fmt.Print("Enter new value: ")
+		valueStr, _ := reader.ReadString('\n')
+		value, err := strconv.Atoi(strings.TrimSpace(valueStr))
+		if err != nil {
+			fmt.Println("Invalid input. Please enter a number.")
+			continue
+		}
+
+		switch choice {
+		case 0:
+			configuration.SetDifficultyTarget(value)
+			fmt.Println("Difficulty Target set to:", configuration.GetDifficultyTarget())
+		case 1:
+			configuration.SetMinNeighbours(value)
+			fmt.Println("Minimum Neighbours set to:", configuration.GetMinNeighbours())
+		case 2:
+			configuration.SetMaxNeighbours(value)
+			fmt.Println("Maximum Neighbours set to:", configuration.GetMaxNeighbours())
+		case 3:
+			configuration.SetMaxSecondsPingDelay(value)
+			fmt.Println("Max Seconds Ping Delay set to:", configuration.GetMaxSecondsPingDelay())
+		case 4:
+			configuration.SetMaxTransactionsInBlock(value)
+			fmt.Println("Max Transactions In Block set to:", configuration.GetMaxTransactionsInBlock())
+		case 5:
+			configuration.SetMinTransactionsInBlock(value)
+			fmt.Println("Min Transactions In Block set to:", configuration.GetMinTransactionsInBlock())
+		case 7:
+			configuration.SetTransactionSpeed(value)
+			fmt.Println("Transaction Speed set to:", configuration.GetTransactionSpeed())
+		default:
+			fmt.Println("Invalid choice. Please select a valid option.")
+		}
 	}
 }

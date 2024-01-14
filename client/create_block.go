@@ -39,6 +39,7 @@ func purifyTransactionPool(pool types.TransactionList) types.TransactionList {
 func createBlock() (bool, types.Block) {
 	transactionPool := nodestate.ReadTransactionPool()
 	transactionPool = purifyTransactionPool(transactionPool)
+	minerNodePort := configuration.GetSelfServerAddress().Port
 
 	if len(transactionPool.Transactions) < configuration.GetMinTransactionsInBlock() {
 		// log.Printf("Not enough transactions (%d) in the purified pool to create a block\n", len(transactionPool.Transactions))
@@ -78,7 +79,7 @@ func createBlock() (bool, types.Block) {
 
 	diffTarget := configuration.GetDifficultyTarget()
 
-	newBlock := types.CreateNewBlock(selectedTransactionList, latestBlockHash, latestBlockHeight+1, diffTarget)
+	newBlock := types.CreateNewBlock(selectedTransactionList, latestBlockHash, latestBlockHeight+1, diffTarget, minerNodePort)
 	// log.Println("New block created successfully")
 	return true, newBlock
 }

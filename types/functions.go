@@ -152,4 +152,8 @@ func ChangeBlock(blockchain *BlockChain) {
 
 	block.Display()
 	newMerkleTree.Display()
+
+	// // Starting mining from the modified block
+	// mining.HandleTamperedBlockchain(blockHeight)
+
 }

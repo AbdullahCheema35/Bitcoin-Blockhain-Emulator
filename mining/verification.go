@@ -1,8 +1,6 @@
 package mining
 
 import (
-	"fmt"
-	"log"
 	"os"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
@@ -15,13 +13,13 @@ func VerifyBlock(b types.Block) types.ReturnType {
 
 	_, hashBytes := b.RecalculateBlockHash()
 	if !validation.CompareWithTargetHash(hashBytes, targetHashBytes) {
-		log.Println("Mining proof verification failed!")
+		// log.Println("Mining proof verification failed!")
 		os.Exit(1)
 		return types.MiningProofFailed
 	}
 
 	if b.IsTransactionListTampered() {
-		log.Println("Merkle root verification failed!")
+		// log.Println("Merkle root verification failed!")
 		return types.MerkleRootFailed
 	}
 
@@ -41,12 +39,12 @@ func VerifyBlockChain(bchain types.BlockChain) (types.ReturnType, *types.BlockNo
 		}
 
 		if currentNode.Block.Header.Height != prevHeight-1 && currentNode != bchain.LatestNode {
-			log.Println("Block height verification failed!")
+			// log.Println("Block height verification failed!")
 			return types.BlockHeightFailed, currentNode, prevNode
 		}
 
 		if currentNode.Block.BlockHash != prevBlockHash && currentNode != bchain.LatestNode {
-			log.Println("Previous block hash verification failed!")
+			// log.Println("Previous block hash verification failed!")
 			return types.PreviousBlockHashFailed, currentNode, prevNode
 		}
 
@@ -57,7 +55,7 @@ func VerifyBlockChain(bchain types.BlockChain) (types.ReturnType, *types.BlockNo
 	}
 
 	if prevNode.Block.Header.Height != 0 {
-		log.Println("Genesis block height verification failed!")
+		// log.Println("Genesis block height verification failed!")
 		return types.GenesisBlockHeightFailed, currentNode, prevNode
 	}
 
@@ -79,7 +77,7 @@ func VerifyDuplicateTransactionsInBlock(bchain types.BlockChain, b types.Block) 
 
 		for _, tx := range transactionList.Transactions {
 			if _, ok := transactionMap[tx.Hash]; ok {
-				fmt.Printf("Duplicate transaction (%s) found in the blockchain\n", tx.Value)
+				// fmt.Printf("Duplicate transaction (%s) found in the blockchain\n", tx.Value)
 				return false
 			}
 		}
