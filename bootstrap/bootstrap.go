@@ -66,12 +66,12 @@ func handleBootstrapRequest(msg types.Message) (types.MessageType, NodeAddress) 
 	}
 }
 
-func respondToBootstrapRequest(nodeConn types.NodeConnection, msgType types.MessageType, currentExistingNodesList interface{}) {
+func respondToBootstrapRequest(conn net.Conn, msgType types.MessageType, currentExistingNodesList interface{}) {
 	// // log.Println("Sending bootstrap connection response")
 	header := createMessageHeader(msgType)
 	body := currentExistingNodesList
 	msg := types.NewMessage(header, body)
-	comm.SendMessage(nodeConn, msg)
+	comm.SendMessage(conn, msg)
 }
 
 // Handle the query from a node's server to the bootstrap node
@@ -81,34 +81,27 @@ func respondToBootstrapRequest(nodeConn types.NodeConnection, msgType types.Mess
 func handleBootstrapQuery(conn net.Conn) {
 	defer conn.Close()
 
-	// Create a new nodeConnection that will be used for communication
-	nodeConn := types.NewNodeConnection(types.NewNodeAddress(0), conn)
-
 	// Receive the NodeAddress of the node's server that is querying to the bootstrap node
-	msgRcvSuccessfully, msg := comm.ReceiveMessage(nodeConn)
+	msgRcvSuccessfully, msg := comm.ReceiveMessage(conn)
 	if !msgRcvSuccessfully { // Failed to receive message from the querying node, i.e., the connection is broken
 		// // log.Println("Error receiving message from querying node")
 		return
 	}
 	msgType, sender := handleBootstrapRequest(msg)
-
-	// Update nodeConn to include the NodeAddress of the querying node's server
-	nodeConn.SetNodeAddress(sender)
-
 	switch msgType {
 	case types.MessageTypeBootstrapConnectionRequest:
 		// // log.Println("Received bootstrap connection request")
 		addUpdateExistingNodesList(sender)
 		currentExistingNodesList := getExistingNodesList()
-		respondToBootstrapRequest(nodeConn, msgType, currentExistingNodesList)
+		respondToBootstrapRequest(conn, msgType, currentExistingNodesList)
 	case types.MessageTypeBootstrapPingRequest:
 		// // log.Println("Received bootstrap ping request")
 		addUpdateExistingNodesList(sender)
-		respondToBootstrapRequest(nodeConn, msgType, nil)
+		respondToBootstrapRequest(conn, msgType, nil)
 	default:
 		// // log.Println("Invalid message type")
 		msgType = types.MessageTypeUnknown
-		respondToBootstrapRequest(nodeConn, msgType, nil)
+		respondToBootstrapRequest(conn, msgType, nil)
 	}
 }
 

@@ -8,7 +8,7 @@ import (
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
-func getExistingNodesFromBootstrapNode(selfNode NodeAddress, nodeConn types.NodeConnection) interface{} {
+func getExistingNodesFromBootstrapNode(selfNode NodeAddress, conn net.Conn) interface{} {
 	// create message header
 	msgHeader := types.MessageHeader{
 		Type:   types.MessageTypeBootstrapConnectionRequest,
@@ -17,14 +17,14 @@ func getExistingNodesFromBootstrapNode(selfNode NodeAddress, nodeConn types.Node
 
 	// Send the node's server address to the bootstrap node
 	message := types.NewMessage(msgHeader, nil)
-	success := comm.SendMessage(nodeConn, message)
+	success := comm.SendMessage(conn, message)
 
 	if !success { // If the message was not sent successfully, return nil
 		return nil
 	}
 
 	// Receive the list of available nodes from the bootstrap node
-	success, msg := comm.ReceiveMessage(nodeConn)
+	success, msg := comm.ReceiveMessage(conn)
 	if !success { // If the message was not received successfully, return nil
 		return nil
 	}
@@ -64,11 +64,8 @@ func GetExistingNodesInNetwork(bootstrapNode NodeAddress, selfNode NodeAddress) 
 	}
 	defer bootstrapConn.Close()
 
-	// Create a new nodeConnection that will be used for communication
-	nodeConn := types.NewNodeConnection(bootstrapNode, bootstrapConn)
-
 	// Get the list of available nodes from the bootstrap node
-	existingNodesList := getExistingNodesFromBootstrapNode(selfNode, nodeConn)
+	existingNodesList := getExistingNodesFromBootstrapNode(selfNode, bootstrapConn)
 	return existingNodesList
 }
 
@@ -79,9 +76,6 @@ func PingBootstrapServer(bootstrapNode NodeAddress) bool {
 		return false
 	}
 	defer bootstrapConn.Close()
-
-	// Create a new nodeConnection that will be used for communication
-	nodeConn := types.NewNodeConnection(bootstrapNode, bootstrapConn)
 
 	// Get self node address
 	sender := configuration.GetSelfServerAddress()
@@ -94,14 +88,14 @@ func PingBootstrapServer(bootstrapNode NodeAddress) bool {
 
 	// Send the node's server address to the bootstrap node
 	message := types.NewMessage(msgHeader, nil)
-	success := comm.SendMessage(nodeConn, message)
+	success := comm.SendMessage(bootstrapConn, message)
 
 	if !success { // If the message was not sent successfully, return nil
 		return false
 	}
 
 	// Receive the list of available nodes from the bootstrap node
-	success, msg := comm.ReceiveMessage(nodeConn)
+	success, msg := comm.ReceiveMessage(bootstrapConn)
 	if !success { // If the message was not received successfully, return nil
 		return false
 	}
