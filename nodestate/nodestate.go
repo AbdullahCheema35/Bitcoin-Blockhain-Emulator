@@ -4,6 +4,37 @@ import (
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
+// Temp sol for seeing if transactions from other nodes are added to the pool
+var (
+	tempTransactionPoolChan chan types.TransactionList = make(chan types.TransactionList, 1)
+)
+
+func AddTxToTempPool(tx types.Transaction) bool {
+	transactionPool := <-tempTransactionPoolChan
+	defer func() {
+		tempTransactionPoolChan <- transactionPool
+	}()
+
+	isAdded := transactionPool.AddTransaction(tx)
+	// if isAdded {
+	// 	log.Printf("Transaction %s added to the pool\n", value)
+	// 	// Display current transaction pool
+	// 	transactionPool.DisplayTransactionPool()
+	// } else {
+	// 	log.Printf("Transaction %s already exists in the pool\n", value)
+	// }
+	return isAdded
+}
+
+func ReadTempTxPool() types.TransactionList {
+	transactionPool := <-tempTransactionPoolChan
+	tempTransactionPoolChan <- transactionPool
+	return transactionPool
+}
+
+// End of temp solution
+// ---------------------------------------------------------------------------
+
 var (
 	currentConnectionsChan   chan types.ConnectionsList   = make(chan types.ConnectionsList, 1)
 	currentExistingNodesChan chan types.BootstrapNodesMap = make(chan types.BootstrapNodesMap, 1)
@@ -18,6 +49,9 @@ func InitNodeState() {
 	currentExistingNodesChan <- types.NewBootstrapNodesMap()
 	transactionPoolChan <- types.NewTransactionList()
 	blockchainChan <- types.NewBlockChain()
+
+	// temp solution -----------------------------------
+	tempTransactionPoolChan <- types.NewTransactionList()
 }
 
 func InitTopologyChan() chan types.TopologyRequest {

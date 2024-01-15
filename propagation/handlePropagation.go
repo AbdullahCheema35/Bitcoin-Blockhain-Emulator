@@ -11,6 +11,8 @@ func HandleReceivedTransaction(transaction types.Transaction, receivedFrom types
 	isAdded, addedTx := nodestate.AddTransactionToPool(transaction.Value)
 
 	if isAdded {
+		// Temp solution -------------------------------------------------------
+		nodestate.AddTxToTempPool(addedTx)
 		// log.Println("Transaction added to the pool, broadcasting to peers.")
 		BroadcastTransaction(addedTx, receivedFrom)
 	}
@@ -29,8 +31,8 @@ func HandleReceivedBlock(block types.Block, receivedFrom types.NodeAddress) {
 		BroadcastBlock(block, receivedFrom)
 	}
 	// Display all the blocks
-	bchain := nodestate.ReadBlockChain()
-	bchain.DisplayHeaderInfo()
+	// bchain := nodestate.ReadBlockChain()
+	// bchain.Display()
 
 }
 
