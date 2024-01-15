@@ -13,7 +13,7 @@ type Row []string
 
 // MerkleTree represents the Merkle Tree
 type MerkleTree struct {
-	rows []Row
+	Rows []Row
 }
 
 // NewMerkleTree constructs a Merkle Tree from a list of transactions
@@ -24,12 +24,12 @@ func NewMerkleTree(transactions TransactionList) MerkleTree {
 	}
 
 	tree := MerkleTree{
-		rows: []Row{row},
+		Rows: []Row{row},
 	}
 
 	for {
-		rowAbove := tree.makeRowAbove(tree.rows[len(tree.rows)-1])
-		tree.rows = append(tree.rows, rowAbove)
+		rowAbove := tree.makeRowAbove(tree.Rows[len(tree.Rows)-1])
+		tree.Rows = append(tree.Rows, rowAbove)
 		tree.adjustRows() // Add the adjustment here
 		if tree.isComplete() {
 			break
@@ -41,19 +41,19 @@ func NewMerkleTree(transactions TransactionList) MerkleTree {
 
 // MerkleRoot returns the Merkle Root of the tree
 func (tree MerkleTree) MerkleRoot() string {
-	return tree.rows[len(tree.rows)-1][0]
+	return tree.Rows[len(tree.Rows)-1][0]
 }
 
 // adjustRows ensures that each row has an even number of nodes
 func (tree MerkleTree) adjustRows() {
-	for level := len(tree.rows) - 1; level >= 0; level-- {
-		row := tree.rows[level]
+	for level := len(tree.Rows) - 1; level >= 0; level-- {
+		row := tree.Rows[level]
 		// // fmt.Println("Level", level, "has", len(row), "nodes")
 		if len(row)%2 != 0 && len(row) > 1 {
 			// // fmt.Println("Adjusted row length to ensure even nodes in level", level)
 			lastNode := row[len(row)-1]
 			// // fmt.Println("Duplicating node:", lastNode)
-			tree.rows[level] = append(tree.rows[level], lastNode)
+			tree.Rows[level] = append(tree.Rows[level], lastNode)
 		}
 	}
 }
@@ -83,14 +83,14 @@ func (tree MerkleTree) joinAndHash(a, b string) string {
 
 // isComplete returns true if the tree is complete
 func (tree MerkleTree) isComplete() bool {
-	return len(tree.rows[len(tree.rows)-1]) == 1
+	return len(tree.Rows[len(tree.Rows)-1]) == 1
 }
 
 // Display displays the Merkle Tree
 func (tree MerkleTree) Display() {
 	// fmt.Println("Merkle Tree:")
-	levels := len(tree.rows)
-	for i, row := range tree.rows {
+	levels := len(tree.Rows)
+	for i, row := range tree.Rows {
 		fmt.Printf("Level %d: %d nodes\n", levels-i-1, len(row))
 		fmt.Println(strings.Join(row, "\n"))
 		fmt.Println()

@@ -163,11 +163,12 @@ func AddTransactionToPool(value string) (bool, types.Transaction) {
 
 	isAdded := transactionPool.AddTransaction(transaction)
 	// if isAdded {
-	// 	// Display the transaction pool
-	// 	// for _, tx := range transactionPool.Transactions {
-	// 	// 	fmt.Println(tx)
-	// 	// }
-	// 	// fmt.Println()
+	// 	log.Printf("Transaction %s added to the pool\n", value)
+	// 	// Display current transaction pool
+	// 	transactionPool.DisplayTransactionPool()
+	// } else {
+	// 	log.Printf("Transaction %s already exists in the pool\n", value)
 	// }
+
 	return isAdded, transaction
 }

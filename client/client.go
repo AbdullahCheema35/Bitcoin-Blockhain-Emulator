@@ -7,6 +7,7 @@ import (
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/bootstrap"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/connection"
+	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/mineblock"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/nodestate"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
@@ -32,6 +33,7 @@ func handleBootstrapServer() {
 
 		// If the number of neighbours is less than the minimum number of neighbours, then connect to the network
 		if currentNeighbours < configuration.GetMinNeighbours() {
+			// log.Println("Number of neighbours is less than the minimum number of neighbours. Connecting to the network...")
 			connection.ConnectWithNetwork_SafeMode()
 		}
 
@@ -63,24 +65,16 @@ func StartClient() {
 
 	// go CreateArbitraryTransactions()
 
-	// Normal execution of the client
+	// Start creating blocks
+	var miningChan chan bool
 	for {
-		// Wait for ten seconds. Then send arbitrary transaction to all nodes
-		// // log.Println("Sleeping for three seconds")
-		// time.Sleep(3000 * time.Millisecond)
-		// // // log.Print("Awake")
-		// // Check if there are any neighbours
-		// currentNeighbours, _ := nodestate.ReadCurrentConnections("client.go: 66")
-		// // // log.Println("Raed current connections")
-		// if currentNeighbours == 0 {
-		// 	// // log.Println("No neighbours to send arbitrary transaction to")
-		// 	continue
-		// }
-		// // log the current connections list
-		// // log.Println("Current connections list:", currentConnectionsList.GetNodeConnections())
-		// Send arbitrary transaction to all nodes
-		// propagation.SendArbitraryTransactionToAllNodes(currentConnectionsList)
-
-		StartCreateBlocks()
+		if EnoughTransactionsForBlock() {
+			miningChan = nodestate.InitMiningChan()
+			ok, newCreatedBlock := createBlock()
+			if ok {
+				mineblock.MineBlock(newCreatedBlock, miningChan)
+			}
+		}
+		time.Sleep(1000 * time.Millisecond)
 	}
 }

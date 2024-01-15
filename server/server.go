@@ -16,15 +16,15 @@ type (
 	ConnectionsList = types.ConnectionsList
 )
 
-func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
-	err, message := comm.ReceiveMessage(conn)
+func receiveClientRequest(nc types.NodeConnection) (bool, NodeAddress) {
+	err, message := comm.ReceiveMessage(nc)
 	if !err {
 		return false, types.NodeAddress{}
 	}
 	switch message.Header.Type {
 	case types.MessageTypeConnectionRequest:
 		sender := message.Header.Sender
-		// // log.Println("Received a connection request from", sender.GetAddress())
+		// log.Println("Received a connection request from", sender.GetAddress())
 		return true, sender
 	default:
 		// // log.Println("Received an unknown message from", message.Header.Sender.GetAddress())
@@ -32,11 +32,11 @@ func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
 	}
 }
 
-func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, bool) {
+func sendResponseToClient(nc types.NodeConnection) (bool, bool) {
 	maxNeighbours := configuration.GetMaxNeighbours()
 	currentNeighbours, currentConnections := nodestate.ReadCurrentConnections("")
-	if currentNeighbours >= maxNeighbours || currentConnections.ExistsAddress(clientNodeAddress) {
-		// // log.Println("Maximum neighbours reached or client node already exists in the current connections list")
+	if currentNeighbours >= maxNeighbours || currentConnections.ExistsAddress(nc.Node) {
+		// log.Println("Maximum neighbours reached or client node already exists in the current connections list")
 
 		messageType := types.MessageTypeFailure
 		sender := configuration.GetSelfServerAddress()
@@ -44,14 +44,14 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 		// messageBody := types.MessageTypeFailure
 		message := types.NewMessage(messageHeader, nil)
 
-		comm.SendMessage(conn, message)
+		comm.SendMessage(nc, message)
 		connectionSuccess, connectionClosed := false, false
 		return connectionSuccess, connectionClosed
 	} else {
 		// Add the client node address to the current connections
-		clientNodeConnection := types.NewNodeConnection(clientNodeAddress, conn)
+		// clientNodeConnection := types.NewNodeConnection(clientNodeAddress, conn)
 		_, currentConnections := nodestate.LockCurrentConnections("")
-		success := connection.AddNewNodeConnection(&currentConnections, clientNodeConnection, "Server")
+		success := connection.AddNewNodeConnection(&currentConnections, nc, "Server")
 		nodestate.UnlockCurrentConnections(currentConnections, "")
 
 		sender := configuration.GetSelfServerAddress()
@@ -61,20 +61,20 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 		}
 		messageHeader := types.NewMessageHeader(messageType, sender)
 		message := types.NewMessage(messageHeader, nil)
-		comm.SendMessage(conn, message)
+		comm.SendMessage(nc, message)
 
-		// // log.Println("Current neighbours:", len(currentConnections.GetNodeConnections()))
-		// // log.Println("Current connections:", currentConnections.GetNodeConnections())
+		// log.Println("Current neighbours:", len(currentConnections.GetNodeConnections()))
+		// log.Println("Current connections:", currentConnections.GetNodeConnections())
 		connectionSuccess, connectionClosed := success, true
 		return connectionSuccess, connectionClosed
 	}
 }
 
-func respondToConnectionRequest(conn net.Conn) (bool, bool) {
+func respondToConnectionRequest(nc types.NodeConnection) (bool, bool) {
 	var isRequestSuccess bool
 	var clientNodeAddress NodeAddress
 
-	isRequestSuccess, clientNodeAddress = receiveClientRequest(conn)
+	isRequestSuccess, clientNodeAddress = receiveClientRequest(nc)
 	if !isRequestSuccess {
 		// log.Println("Unsuccessful connection request received from", clientNodeAddress.GetAddress())
 		return false, false
@@ -82,7 +82,9 @@ func respondToConnectionRequest(conn net.Conn) (bool, bool) {
 		// log.Println("Successful connection request received from", clientNodeAddress.GetAddress())
 	}
 
-	isConnectionSuccess, isConnectionClosed := sendResponseToClient(conn, clientNodeAddress)
+	nc.SetNodeAddress(clientNodeAddress)
+
+	isConnectionSuccess, isConnectionClosed := sendResponseToClient(nc)
 	if !isConnectionSuccess {
 		// log.Println("Unsuccessful connection response sent to", clientNodeAddress.GetAddress())
 	} else {
@@ -92,15 +94,25 @@ func respondToConnectionRequest(conn net.Conn) (bool, bool) {
 }
 
 func handleConnection(conn net.Conn) {
-	// // log.Println("Received a connection request")
+	// log.Println("---------------------------Received a connection request---------------------------------------")
 
-	_, isConnectionClosed := respondToConnectionRequest(conn)
+	new_nc := types.NewNodeConnection(types.NewNodeAddress(0), conn)
 
-	if !isConnectionClosed {
-		// log.Println("Closing connection. Line 97 of server.go")
-		conn.Close()
+	isConnectionSuccess, isConnectionClosed := respondToConnectionRequest(new_nc)
+
+	if !isConnectionSuccess {
+		if !isConnectionClosed {
+			conn.Close()
+		}
+		return
 	}
+
+	if new_nc.Conn == nil {
+		// log.Panicln("Client Node Connection is nil, although everything went smooth")
+	}
+
 	// Now we can start listening for messages from the Client Node
+	// connection.ListenForMessages(clientNodeConn.(types.NodeConnection))
 }
 
 func StartServer() {
@@ -108,7 +120,7 @@ func StartServer() {
 	serverAddress := serverNode.GetAddress()
 	listener, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		// log.Println("Error listening:", err)
+		// log.Panicln("Error listening:", err)
 		return
 	}
 	defer listener.Close()

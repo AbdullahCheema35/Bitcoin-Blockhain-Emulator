@@ -1,5 +1,9 @@
 package types
 
+import (
+	"fmt"
+)
+
 // BlockNode struct representing a node in the blockchain
 type BlockNode struct {
 	Block    Block
@@ -18,12 +22,32 @@ func NewBlockChain() BlockChain {
 	}
 }
 
+func (bchain *BlockChain) DisplayHeaderInfo() {
+	currentNode := bchain.LatestNode
+	if currentNode == nil {
+		fmt.Println("-----------------Blockchain is empty-----------------")
+		return
+	}
+	fmt.Println("-----------------Blockchain Display Start-----------------")
+	for currentNode != nil {
+		currentNode.Block.DisplayHeader()
+		currentNode = currentNode.PrevNode
+	}
+	fmt.Println("-----------------Blockchain Display End-----------------")
+}
+
 func (bchain *BlockChain) Display() {
 	currentNode := bchain.LatestNode
+	if currentNode == nil {
+		fmt.Println("-----------------Blockchain is empty-----------------")
+		return
+	}
+	fmt.Println("-----------------Blockchain Display Start-----------------")
 	for currentNode != nil {
 		currentNode.Block.Display()
 		currentNode = currentNode.PrevNode
 	}
+	fmt.Println("-----------------Blockchain Display End-----------------")
 }
 
 // AddBlock adds a block to the blockchain, if the height of the block is greater than the height of the latest block in the blockchain

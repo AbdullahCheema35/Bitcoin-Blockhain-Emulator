@@ -32,7 +32,7 @@ func (tl *TransactionList) RemoveTransaction(transaction Transaction) bool {
 	return false
 }
 
-func (tl *TransactionList) GetTransactions() []Transaction {
+func (tl TransactionList) GetTransactions() []Transaction {
 	return tl.Transactions
 }
 
@@ -46,7 +46,22 @@ func (tl *TransactionList) Contains(transaction Transaction) bool {
 	return false
 }
 
-func DisplayTransactionPool(transactionPool *TransactionList) {
+func (tl *TransactionList) DisplayValueFromPool() {
+	fmt.Println("Transaction Pool:")
+	transactions := tl.GetTransactions()
+
+	if len(transactions) == 0 {
+		fmt.Println("No transactions in the pool.")
+		return
+	}
+
+	for _, transaction := range transactions {
+		fmt.Printf("%s\n", transaction.Value)
+	}
+	fmt.Println("------------------------")
+}
+
+func (transactionPool TransactionList) DisplayTransactionPool() {
 	fmt.Println("Transaction Pool:")
 	transactions := transactionPool.GetTransactions()
 
@@ -62,5 +77,8 @@ func DisplayTransactionPool(transactionPool *TransactionList) {
 }
 
 func NewTransactionListFromSlice(transactions []Transaction) TransactionList {
-	return TransactionList{Transactions: transactions}
+	// Deep copy the slice passed in to ensure no sharing of underlying data
+	copiedSlice := make([]Transaction, len(transactions))
+	copy(copiedSlice, transactions)
+	return TransactionList{Transactions: copiedSlice}
 }

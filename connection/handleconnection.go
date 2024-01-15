@@ -17,7 +17,7 @@ func AddNewNodeConnection(ncl *ConnectionsList, nc NodeConnection, str string) b
 	success := ncl.AddNodeConnection(nc)
 	if success {
 		// log.Printf("AddNewNodeConnection -> %s: Added new node connection with %v\n", str, nc.Node.GetAddress())
-		go listenForMessages(nc)
+		go ListenForMessages(nc)
 	} else {
 		// log.Printf("AddNewNodeConnection -> %s: Failed to add new node connection with %v\n", str, nc.Node.GetAddress())
 		nc.Conn.Close()
@@ -64,7 +64,10 @@ func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 			// log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
 			continue
 		}
-		isConnectionRequestSuccess := sendConnectionRequestToNode(node, conn)
+		// Create a nodeConn instance
+		nodeConnection := types.NewNodeConnection(node, conn)
+
+		isConnectionRequestSuccess := sendConnectionRequestToNode(nodeConnection)
 		// // log.Println("Line 59: handleConnection.go")
 		if !isConnectionRequestSuccess {
 			// log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
@@ -74,7 +77,7 @@ func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 			}
 			continue
 		}
-		isConnectionResponseSuccess := receiveConnectionResponseFromNode(conn)
+		isConnectionResponseSuccess := receiveConnectionResponseFromNode(nodeConnection)
 		if !isConnectionResponseSuccess {
 			// log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
 			if conn != nil {
@@ -82,7 +85,8 @@ func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 			}
 			continue
 		}
-		nodeConnection := types.NewNodeConnection(node, conn)
+
+		// Add the nodeConn instance to list of current Connections
 		_, currentConnections = nodestate.LockCurrentConnections("Line 68: HandleCOnnecuin.go Add new node")
 		returnVal := AddNewNodeConnection(&currentConnections, nodeConnection, "handleconnection")
 		nodestate.UnlockCurrentConnections(currentConnections, "Line 70: UblockNode HandleCOnnecuin.go")
@@ -100,13 +104,15 @@ func ConnectWithNetwork_SafeMode() {
 	// Read Current Resources
 	currentNeighbours, _ := nodestate.ReadCurrentConnections("handleconnection.go: 76")
 	if currentNeighbours >= minNeighbours {
-		// log.Println("No need to add more connections. Currently established connections are", len(currentConnections.GetNodeConnections()), "neighbours")
+		// log.Println("No need to add more connections. Currently established connections are", currentNeighbours, "neighbours")
 		return
 	}
 	serverNode := configuration.GetSelfServerAddress()
 	bootstrapNode := configuration.GetBootstrapNodeAddress()
 	// Get the list of existing nodes in the network from the bootstrap node
+	// log.Println("Getting existing nodes in network from bootstrap node", bootstrapNode.GetAddress())
 	existingNodes := bootstrap.GetExistingNodesInNetwork(bootstrapNode, serverNode)
+	// log.Println("Got existing nodes in network from bootstrap node", bootstrapNode.GetAddress())
 	if existingNodes == nil {
 		// nodestate.LockBootstrapChan()
 		// nodestate.UnlockBootstrapChan(false)
@@ -115,7 +121,7 @@ func ConnectWithNetwork_SafeMode() {
 	}
 	existingNodesList := existingNodes.(NodesList)
 
-	// // log.Println("Received existing nodes in network. Length:", len(existingNodes.GetNodes()))
+	// log.Println("Received existing nodes in network. Length:", len(existingNodesList.GetNodes()))
 	// // log.Println("Existing nodes in the network: ", len(existingNodesList.GetNodes()), existingNodesList.GetNodes())
 
 	// Connect to the existing nodes
@@ -125,13 +131,13 @@ func ConnectWithNetwork_SafeMode() {
 func HandleLostNodeConnection(nc NodeConnection) {
 	// Lock Resources
 	_, currentConnections := nodestate.LockCurrentConnections("handleconnection.go: 99")
-	currentConnections.RemoveNodeConnection(nc)
+	success := currentConnections.RemoveNodeConnection(nc)
 	// Unlock Resources
 	nodestate.UnlockCurrentConnections(currentConnections, "handleconnection.go: 102")
-	// if success {
-	// 	// log.Println("Removed broken node connection with ", nc.Node.GetAddress())
-	// } else {
-	// 	// log.Println("Failed to remove broken node connection with ", nc.Node.GetAddress())
-	// }
+	if success {
+		// log.Println("Removed broken node connection with ", nc.Node.GetAddress())
+	} else {
+		// log.Println("Failed to remove broken node connection with ", nc.Node.GetAddress())
+	}
 	ConnectWithNetwork_SafeMode()
 }
