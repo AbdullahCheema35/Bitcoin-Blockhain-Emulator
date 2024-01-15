@@ -51,7 +51,7 @@ func receiveConnectionResponseFromNode(conn net.Conn) bool {
 	}
 }
 
-func ListenForMessages(nc types.NodeConnection) {
+func listenForMessages(nc types.NodeConnection) {
 	conn := nc.Conn
 
 	// log.Println("Listening for messages from", nc.Node.GetAddress())

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
@@ -33,7 +32,7 @@ func receiveClientRequest(conn net.Conn) (bool, NodeAddress) {
 	}
 }
 
-func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, bool, interface{}) {
+func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, bool) {
 	maxNeighbours := configuration.GetMaxNeighbours()
 	currentNeighbours, currentConnections := nodestate.ReadCurrentConnections("")
 	if currentNeighbours >= maxNeighbours || currentConnections.ExistsAddress(clientNodeAddress) {
@@ -47,7 +46,7 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 
 		comm.SendMessage(conn, message)
 		connectionSuccess, connectionClosed := false, false
-		return connectionSuccess, connectionClosed, nil
+		return connectionSuccess, connectionClosed
 	} else {
 		// Add the client node address to the current connections
 		clientNodeConnection := types.NewNodeConnection(clientNodeAddress, conn)
@@ -67,49 +66,41 @@ func sendResponseToClient(conn net.Conn, clientNodeAddress NodeAddress) (bool, b
 		// // log.Println("Current neighbours:", len(currentConnections.GetNodeConnections()))
 		// // log.Println("Current connections:", currentConnections.GetNodeConnections())
 		connectionSuccess, connectionClosed := success, true
-		return connectionSuccess, connectionClosed, clientNodeConnection
+		return connectionSuccess, connectionClosed
 	}
 }
 
-func respondToConnectionRequest(conn net.Conn) (bool, bool, interface{}) {
+func respondToConnectionRequest(conn net.Conn) (bool, bool) {
 	var isRequestSuccess bool
 	var clientNodeAddress NodeAddress
 
 	isRequestSuccess, clientNodeAddress = receiveClientRequest(conn)
 	if !isRequestSuccess {
 		// log.Println("Unsuccessful connection request received from", clientNodeAddress.GetAddress())
-		return false, false, nil
+		return false, false
 	} else {
 		// log.Println("Successful connection request received from", clientNodeAddress.GetAddress())
 	}
 
-	isConnectionSuccess, isConnectionClosed, clientNodeConn := sendResponseToClient(conn, clientNodeAddress)
+	isConnectionSuccess, isConnectionClosed := sendResponseToClient(conn, clientNodeAddress)
 	if !isConnectionSuccess {
 		// log.Println("Unsuccessful connection response sent to", clientNodeAddress.GetAddress())
 	} else {
 		// log.Println("Successful connection response sent to", clientNodeAddress.GetAddress())
 	}
-	return isConnectionSuccess, isConnectionClosed, clientNodeConn
+	return isConnectionSuccess, isConnectionClosed
 }
 
 func handleConnection(conn net.Conn) {
 	// // log.Println("Received a connection request")
 
-	isConnectionSuccess, isConnectionClosed, clientNodeConn := respondToConnectionRequest(conn)
+	_, isConnectionClosed := respondToConnectionRequest(conn)
 
-	if !isConnectionSuccess {
-		if !isConnectionClosed {
-			conn.Close()
-		}
-		return
+	if !isConnectionClosed {
+		// log.Println("Closing connection. Line 97 of server.go")
+		conn.Close()
 	}
-
-	if clientNodeConn == nil {
-		log.Panicln("Client Node Connection is nil, although everything went smooth")
-	}
-
 	// Now we can start listening for messages from the Client Node
-	connection.ListenForMessages(clientNodeConn.(types.NodeConnection))
 }
 
 func StartServer() {
