@@ -1,0 +1,4 @@
+go run main.go -p 3001 -b 4001 -m
+go run main.go -p 3002 -b 4001
+go run main.go -p 3003 -b 4001
+go run main.go -p 3004 -b 4001
