@@ -1,8 +1,6 @@
 package mineblock
 
 import (
-	"log"
-
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/propagation"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
@@ -10,10 +8,14 @@ import (
 )
 
 func MineBlock(b types.Block, miningProcessAbortedChan chan bool) {
-	log.Println("Mining block...")
+	// fmt.Println("Inside the function MineBlock")
+	// fmt.Println("Mining block...")
 
 	difficultyTarget := b.Header.DifficultyTarget
 	_, targetHashBytes := validation.GenerateTargetHash(difficultyTarget)
+
+	// // fmt.Println("Difficulty target:", difficultyTarget)
+	// // fmt.Println("Target hash:", targetHash)
 
 	header := b.Header
 	header.Nonce = 0
@@ -21,24 +23,27 @@ func MineBlock(b types.Block, miningProcessAbortedChan chan bool) {
 	for {
 		_, hashBytes := header.RecalculateBlockHeaderHash()
 		if validation.CompareWithTargetHash(hashBytes, targetHashBytes) {
-			log.Printf("Block mined! Nonce: %d\n", header.Nonce)
+			// fmt.Printf("Block mined! Nonce: %d\n", header.Nonce)
 			break
 		}
 
 		select {
 		case <-miningProcessAbortedChan:
-			log.Println("Mining process aborted")
+			// fmt.Println("Mining process aborted")
 			return
 		default:
 			header.Nonce++
 		}
+		// // Sleep for random amount of time less than 100 milliseconds
+		// time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
 	}
 
 	b.Header = header
 	b.RecalculateBlockHash()
 
+	// Get self node
 	selfNode := configuration.GetSelfServerAddress()
 
+	// Call the function to handle the mined block
 	propagation.HandleReceivedBlock(b, selfNode)
-	log.Println("Mining process completed (successfully)")
 }

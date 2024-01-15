@@ -3,11 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"runtime"
-	"time"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/bootstrap"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/client"
@@ -87,18 +85,7 @@ func main() {
 
 	// Keep the program running
 	// select {}
-	// menu()
-	// go displayBlockChain()
-	go checkTransactionPool()
-	periodicallyGenerateRandomTransaction()
-}
-
-func displayBlockChain() {
-	for {
-		bchain := nodestate.ReadBlockChain()
-		bchain.Display()
-		time.Sleep(1000 * time.Millisecond)
-	}
+	menu()
 }
 
 func ClearScreen() {
@@ -116,42 +103,7 @@ func ClearScreen() {
 	}
 }
 
-func checkTransactionPool() {
-	for {
-		txPool := nodestate.ReadTransactionPool()
-		bchain := nodestate.ReadBlockChain()
-
-		// Traverse the transaction pool and check if any duplicate transactions
-
-		// Create mapping of transaction hash to transaction
-		// If a transaction hash already exists in the map, then it is a duplicate transaction
-		// If a transaction hash does not exist in the map, then add it to the map
-
-		txMap := make(map[string]types.Transaction)
-
-		for _, tx := range txPool.Transactions {
-			if _, ok := txMap[tx.Hash]; ok {
-				txPool.DisplayTransactionPool()
-				bchain.Display()
-				log.Fatalln("Duplicate transaction found in the transaction pool")
-			} else {
-				txMap[tx.Hash] = tx
-			}
-		}
-
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-
-func periodicallyGenerateRandomTransaction() {
-	for {
-		client.CreateRandomTransaction()
-		// Sleep for 1 seconds
-		time.Sleep(1000 * time.Millisecond)
-	}
-}
-
-func Menu() {
+func menu() {
 	// Assuming blockchain is initialized and accessible
 
 	transactions1 := types.TransactionList{
@@ -248,7 +200,7 @@ func Menu() {
 			fmt.Println("------------------------------")
 			fmt.Println("                       ")
 			txPool := nodestate.ReadTransactionPool()
-			txPool.DisplayTransactionPool()
+			types.DisplayTransactionPool(&txPool)
 			fmt.Println("------------------------------")
 			fmt.Println("                       ")
 		case 5:

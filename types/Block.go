@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -66,14 +65,12 @@ func (b Block) Display() {
 	// fmt.Printf("Merkle Root Hash: %s\n", b.Header.MerkleRootHash)
 	// fmt.Printf("Timestamp: %s\n", b.Header.Timestamp.String())
 
-	fmt.Println("Block Transactions:")
-	for _, tx := range b.Body.Transactions.Transactions {
-		fmt.Printf("Tx Hash: %s, Tx Value: %s\n", tx.Hash, tx.Value)
-	}
-	fmt.Println("------------------------------")
+	// fmt.Println("\nBlock Transactions:")
+	// for _, tx := range b.Body.Transactions.Transactions {
+	// 	fmt.Printf("Transaction Value: %s\n", tx.Value)
+	// 	fmt.Printf("Transaction Hash: %s\n", tx.Hash) // Update to display the new hash
+	// }
 	// fmt.Println()
-	// b.Body.Transactions.DisplayTransactionPool()
-	// fmt.Println("------------------------------")
 }
 
 // Function to recalculate Merkle Root Hash based on current block transactions

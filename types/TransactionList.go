@@ -32,7 +32,7 @@ func (tl *TransactionList) RemoveTransaction(transaction Transaction) bool {
 	return false
 }
 
-func (tl TransactionList) GetTransactions() []Transaction {
+func (tl *TransactionList) GetTransactions() []Transaction {
 	return tl.Transactions
 }
 
@@ -46,7 +46,7 @@ func (tl *TransactionList) Contains(transaction Transaction) bool {
 	return false
 }
 
-func (transactionPool TransactionList) DisplayTransactionPool() {
+func DisplayTransactionPool(transactionPool *TransactionList) {
 	fmt.Println("Transaction Pool:")
 	transactions := transactionPool.GetTransactions()
 
@@ -62,8 +62,5 @@ func (transactionPool TransactionList) DisplayTransactionPool() {
 }
 
 func NewTransactionListFromSlice(transactions []Transaction) TransactionList {
-	// Deep copy the slice passed in to ensure no sharing of underlying data
-	copiedSlice := make([]Transaction, len(transactions))
-	copy(copiedSlice, transactions)
-	return TransactionList{Transactions: copiedSlice}
+	return TransactionList{Transactions: transactions}
 }
