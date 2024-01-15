@@ -69,7 +69,6 @@ func GetExistingNodesInNetwork(bootstrapNode NodeAddress, selfNode NodeAddress) 
 
 	// Get the list of available nodes from the bootstrap node
 	existingNodesList := getExistingNodesFromBootstrapNode(selfNode, nodeConn)
-
 	return existingNodesList
 }
 

@@ -23,20 +23,6 @@ func NewBlockChain() BlockChain {
 	}
 }
 
-func (bchain *BlockChain) DisplayHeaderInfo() {
-	currentNode := bchain.LatestNode
-	if currentNode == nil {
-		log.Println("-----------------Blockchain is empty-----------------")
-		return
-	}
-	fmt.Println("-----------------Blockchain Display Start-----------------")
-	for currentNode != nil {
-		currentNode.Block.DisplayHeader()
-		currentNode = currentNode.PrevNode
-	}
-	fmt.Println("-----------------Blockchain Display End-----------------")
-}
-
 func (bchain *BlockChain) Display() {
 	currentNode := bchain.LatestNode
 	if currentNode == nil {

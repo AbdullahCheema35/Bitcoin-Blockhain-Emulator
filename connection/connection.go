@@ -1,7 +1,6 @@
 package connection
 
 import (
-	"log"
 	"net"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/comm"
@@ -55,7 +54,7 @@ func receiveConnectionResponseFromNode(nc types.NodeConnection) bool {
 func ListenForMessages(nc types.NodeConnection) {
 	conn := nc.Conn
 
-	log.Println("Listening for messages from", nc.Node.GetAddress())
+	// log.Println("Listening for messages from", nc.Node.GetAddress())
 
 	for {
 		err, message := comm.ReceiveMessage(nc)
@@ -70,7 +69,7 @@ func ListenForMessages(nc types.NodeConnection) {
 			sender := message.Header.Sender
 			body := message.Body.(types.Transaction)
 			propagation.HandleReceivedTransaction(body, sender)
-			// log.Printf("Received transaction %s from %v\n", body.Value, sender.GetAddress())
+			// log.Printf("Received transaction %v from %v\n", body, sender.GetAddress())
 		case types.MessageTypeBlock:
 			sender := message.Header.Sender
 			body := message.Body.(types.Block)
@@ -93,8 +92,8 @@ func ListenForMessages(nc types.NodeConnection) {
 			// log.Println("Received a topology response from", sender.GetAddress())
 			propagation.HandleTopologyResponse(message.Body.(types.TopologyRequest), sender)
 		default:
-			sender := message.Header.Sender
-			log.Println("Received an unknown message from", sender.GetAddress())
+			// sender := message.Header.Sender
+			// log.Println("Received an unknown message from", sender.GetAddress())
 		}
 	}
 }

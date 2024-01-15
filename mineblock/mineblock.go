@@ -10,7 +10,7 @@ import (
 )
 
 func MineBlock(b types.Block, miningProcessAbortedChan chan bool) {
-	// log.Println("Mining block...")
+	log.Println("Mining block...")
 
 	difficultyTarget := b.Header.DifficultyTarget
 	_, targetHashBytes := validation.GenerateTargetHash(difficultyTarget)
@@ -21,7 +21,7 @@ func MineBlock(b types.Block, miningProcessAbortedChan chan bool) {
 	for {
 		_, hashBytes := header.RecalculateBlockHeaderHash()
 		if validation.CompareWithTargetHash(hashBytes, targetHashBytes) {
-			// log.Printf("Block mined! Nonce: %d\n", header.Nonce)
+			log.Printf("Block mined! Nonce: %d\n", header.Nonce)
 			break
 		}
 
@@ -40,5 +40,5 @@ func MineBlock(b types.Block, miningProcessAbortedChan chan bool) {
 	selfNode := configuration.GetSelfServerAddress()
 
 	propagation.HandleReceivedBlock(b, selfNode)
-	// log.Println("Mining process completed (successfully)")
+	log.Println("Mining process completed (successfully)")
 }

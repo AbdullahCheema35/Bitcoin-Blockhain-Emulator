@@ -46,21 +46,6 @@ func (tl *TransactionList) Contains(transaction Transaction) bool {
 	return false
 }
 
-func (tl *TransactionList) DisplayValueFromPool() {
-	fmt.Println("Transaction Pool:")
-	transactions := tl.GetTransactions()
-
-	if len(transactions) == 0 {
-		fmt.Println("No transactions in the pool.")
-		return
-	}
-
-	for _, transaction := range transactions {
-		fmt.Printf("%s\n", transaction.Value)
-	}
-	fmt.Println("------------------------")
-}
-
 func (transactionPool TransactionList) DisplayTransactionPool() {
 	fmt.Println("Transaction Pool:")
 	transactions := transactionPool.GetTransactions()
