@@ -2,7 +2,6 @@ package mining
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
@@ -74,8 +73,8 @@ func HandleNewBChain(newbchain types.BlockChain) {
 	}
 }
 
-func HandleTamperedBlockchain(newbchain *types.BlockChain, tamperedBlockHeight int) {
-	result, _, _ := VerifyBlockChain(*newbchain)
+func HandleTamperedBlockchain(newbchain types.BlockChain, tamperedBlockHeight int) {
+	result, _, _ := VerifyBlockChain(newbchain)
 
 	if result != types.BlockChainVerificationSuccessful {
 		fmt.Println("Blockchain Verification Failed. Restarting mining from tampered block height")
@@ -86,9 +85,10 @@ func HandleTamperedBlockchain(newbchain *types.BlockChain, tamperedBlockHeight i
 		// Get to node at the tampered block height
 		currNode := currBchain.LatestNode
 
-		for currNode != nil && currNode.Block.Header.Height >= tamperedBlockHeight {
+		for currNode.Block.Header.Height > tamperedBlockHeight && currNode.Block.Header.Height != tamperedBlockHeight {
 			currNode = currNode.PrevNode
 		}
+
 		currBchain.LatestNode = currNode
 
 		nodestate.UnlockBlockChain(currBchain)
@@ -132,7 +132,7 @@ func AddNewBlockToBlockChain(b types.Block) types.ReturnType {
 
 	success := bchain.AddBlock(b)
 	if !success {
-		log.Println("Serious Error: Block was not added to the blockchain")
+		// log.Println("Serious Error: Block was not added to the blockchain")
 		os.Exit(1)
 	}
 	// log.Println("Transaction Pool Before Pruning:")

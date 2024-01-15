@@ -13,20 +13,9 @@ var (
 	maxNeighbours          int = 4
 	maxSecondsPingDelay    int = 12
 	maxTransactionsInBlock int = 5
-	minTransactionsInBlock int = 3
-	difficultyTarget       int = 4
-	transactionSpeed       int = 5
-)
-
-// Create individual channels for all of above variables
-var (
-	minNeighboursChan          = make(chan bool, 1)
-	maxNeighboursChan          = make(chan bool, 1)
-	maxSecondsPingDelayChan    = make(chan bool, 1)
-	maxTransactionsInBlockChan = make(chan bool, 1)
-	minTransactionsInBlockChan = make(chan bool, 1)
-	difficultyTargetChan       = make(chan bool, 1)
-	transactionSpeedChan       = make(chan bool, 1)
+	minTransactionsInBlock int = 2
+	difficultyTarget       int = 24
+	transactionSpeed       int = 10
 )
 
 var (
@@ -41,15 +30,6 @@ func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNode
 	selfBootstrapAddress = _selfBootstrapAddress
 	bootstrapNodeAddress = _bootstrapNodeAddress
 	isSelfBootstrapNode = _isSelfBootstrapNode
-
-	// Initialize the channels
-	minNeighboursChan <- true
-	maxNeighboursChan <- true
-	maxSecondsPingDelayChan <- true
-	maxTransactionsInBlockChan <- true
-	minTransactionsInBlockChan <- true
-	difficultyTargetChan <- true
-	transactionSpeedChan <- true
 
 	// Register types for gob
 	gob.Register(types.NodesList{})
@@ -70,24 +50,15 @@ func InitConfiguration(_selfServerAddress, _selfBootstrapAddress, _bootstrapNode
 
 // Getter functions
 func GetMinNeighbours() int {
-	<-minNeighboursChan
-	retVal := minNeighbours
-	minNeighboursChan <- true
-	return retVal
+	return minNeighbours
 }
 
 func GetMaxNeighbours() int {
-	<-maxNeighboursChan
-	retVal := maxNeighbours
-	maxNeighboursChan <- true
-	return retVal
+	return maxNeighbours
 }
 
 func GetMaxSecondsPingDelay() int {
-	<-maxSecondsPingDelayChan
-	retVal := maxSecondsPingDelay
-	maxSecondsPingDelayChan <- true
-	return retVal
+	return maxSecondsPingDelay
 }
 
 func GetSelfServerAddress() types.NodeAddress {
@@ -107,71 +78,31 @@ func GetIsSelfBootstrapNode() bool {
 }
 
 func GetMaxTransactionsInBlock() int {
-	<-maxTransactionsInBlockChan
-	retVal := maxTransactionsInBlock
-	maxTransactionsInBlockChan <- true
-	return retVal
+	return maxTransactionsInBlock
 }
 
 func GetMinTransactionsInBlock() int {
-	<-minTransactionsInBlockChan
-	retVal := minTransactionsInBlock
-	minTransactionsInBlockChan <- true
-	return retVal
+	return minTransactionsInBlock
 }
 
 func GetTransactionSpeed() int {
-	<-transactionSpeedChan
-	retVal := transactionSpeed
-	transactionSpeedChan <- true
-	return retVal
+	return transactionSpeed
 }
 
-func SetTransactionSpeed(value int) {
-	<-transactionSpeedChan
-	transactionSpeed = value
-	transactionSpeedChan <- true
-}
+func SetTransactionSpeed(value int) { transactionSpeed = value }
 
 func GetDifficultyTarget() int {
-	<-difficultyTargetChan
-	retVal := difficultyTarget
-	difficultyTargetChan <- true
-	return retVal
+	return difficultyTarget
 }
 
-func SetMinNeighbours(value int) {
-	<-minNeighboursChan
-	minNeighbours = value
-	minNeighboursChan <- true
-}
+func SetMinNeighbours(value int) { minNeighbours = value }
 
-func SetMaxNeighbours(value int) {
-	<-maxNeighboursChan
-	maxNeighbours = value
-	maxNeighboursChan <- true
-}
+func SetMaxNeighbours(value int) { maxNeighbours = value }
 
-func SetMaxSecondsPingDelay(value int) {
-	<-maxSecondsPingDelayChan
-	maxSecondsPingDelay = value
-	maxSecondsPingDelayChan <- true
-}
+func SetMaxSecondsPingDelay(value int) { maxSecondsPingDelay = value }
 
-func SetMaxTransactionsInBlock(value int) {
-	<-maxTransactionsInBlockChan
-	maxTransactionsInBlock = value
-	maxTransactionsInBlockChan <- true
-}
+func SetMaxTransactionsInBlock(value int) { maxTransactionsInBlock = value }
 
-func SetMinTransactionsInBlock(value int) {
-	<-minTransactionsInBlockChan
-	minTransactionsInBlock = value
-	minTransactionsInBlockChan <- true
-}
+func SetMinTransactionsInBlock(value int) { minTransactionsInBlock = value }
 
-func SetDifficultyTarget(value int) {
-	<-difficultyTargetChan
-	difficultyTarget = value
-	difficultyTargetChan <- true
-}
+func SetDifficultyTarget(value int) { difficultyTarget = value }

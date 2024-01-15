@@ -1,6 +1,8 @@
 package mining
 
 import (
+	"os"
+
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/validation"
 )
@@ -12,6 +14,7 @@ func VerifyBlock(b types.Block) types.ReturnType {
 	_, hashBytes := b.RecalculateBlockHash()
 	if !validation.CompareWithTargetHash(hashBytes, targetHashBytes) {
 		// log.Println("Mining proof verification failed!")
+		os.Exit(1)
 		return types.MiningProofFailed
 	}
 

@@ -14,7 +14,6 @@ import (
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/bootstrap"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/client"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
-	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/mining"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/nodestate"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/propagation"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/server"
@@ -90,7 +89,7 @@ func main() {
 
 	// Keep the program running
 	// select {}
-	// go periodicallyGenerateRandomTransaction()
+	go periodicallyGenerateRandomTransaction()
 	Menu()
 	os.Exit(0)
 }
@@ -221,7 +220,7 @@ func Menu() {
 			fmt.Println("------------------------------")
 			fmt.Println("                       ")
 			bchain := nodestate.ReadBlockChain()
-			changeBlock(&bchain)
+			types.ChangeBlock(&bchain)
 			fmt.Println("------------------------------")
 			fmt.Println("                       ")
 		case 4:
@@ -285,90 +284,6 @@ func displayNetworkLists(nl []types.NetworkList) {
 		networkList.Display()
 	}
 
-}
-
-func changeBlock(blockchain *types.BlockChain) {
-	reader := bufio.NewReader(os.Stdin)
-
-	// Step 1: Ask the user to enter the block height
-	fmt.Print("Enter block height: ")
-	blockHeightStr, _ := reader.ReadString('\n')
-	blockHeight, err := strconv.Atoi(strings.TrimSpace(blockHeightStr))
-	if err != nil {
-		fmt.Println("Invalid block height.")
-		return
-	}
-
-	// Step 2: Iterate through the blockchain to find the block with this height
-	var block *types.Block
-	currentNode := blockchain.LatestNode
-	for currentNode != nil {
-		if currentNode.Block.Header.Height == blockHeight {
-			block = &currentNode.Block
-			break
-		}
-		currentNode = currentNode.PrevNode
-	}
-
-	if block == nil {
-		fmt.Println("Block not found.")
-		return
-	}
-
-	// Step 3: Display the block
-	block.Display()
-	block.Body.MerkleTree.Display()
-
-	// Step 4: Ask how many transactions to change
-	fmt.Print("How many transactions do you want to change? ")
-	transactionCountStr, _ := reader.ReadString('\n')
-	transactionCount, err := strconv.Atoi(strings.TrimSpace(transactionCountStr))
-	if err != nil {
-		fmt.Println("Invalid transaction count.")
-		return
-	}
-
-	// Step 5: Check if enough transactions exist
-	if len(block.Body.Transactions.Transactions) < transactionCount {
-		fmt.Println("Not enough transactions in the block.")
-		return
-	}
-
-	// Steps 6 to 8: Process each transaction change
-	for i := 0; i < transactionCount; i++ {
-		fmt.Printf("Enter the index of transaction #%d to change: ", i+1)
-		transactionIndexStr, _ := reader.ReadString('\n')
-		transactionIndex, err := strconv.Atoi(strings.TrimSpace(transactionIndexStr))
-		if err != nil || transactionIndex < 0 || transactionIndex >= len(block.Body.Transactions.Transactions) {
-			fmt.Println("Invalid transaction index.")
-			i-- // Retry the same transaction
-			continue
-		}
-
-		fmt.Printf("Enter new value for transaction #%d: ", i+1)
-		newValue, _ := reader.ReadString('\n')
-		newValue = strings.TrimSpace(newValue) // Remove leading/trailing whitespaces
-
-		newTransaction := types.NewTransaction(newValue)
-
-		// Update the transaction in the TransactionList
-		block.Body.Transactions.Transactions[transactionIndex] = newTransaction
-
-	}
-
-	// Recalculate Merkle tree and update Merkle root hash of the block
-	newMerkleTree := types.NewMerkleTree(block.Body.Transactions)
-	block.Body.MerkleTree = newMerkleTree
-	block.Header.MerkleRootHash = newMerkleTree.MerkleRoot()
-
-	// Step 9: Transactions are already added to the block by modifying the slice
-	fmt.Println("Transactions updated successfully.")
-
-	block.Display()
-	newMerkleTree.Display()
-
-	// Starting mining from the modified block
-	mining.HandleTamperedBlockchain(blockchain, blockHeight)
 }
 
 func blockchainConfiguration() {
