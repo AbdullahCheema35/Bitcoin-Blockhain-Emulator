@@ -1,7 +1,7 @@
 package mining
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
@@ -14,28 +14,28 @@ func HandleNewBlock(block types.Block, receivedFrom types.NodeAddress) types.Ret
 
 	switch result {
 	case types.NewBlockVerificationFailed:
-		// log.Println("New block verification failed; do nothing")
+		log.Println("New block verification failed; do nothing")
 		return types.DoNothing
 	case types.NewHeightLEQCurrentHeight:
-		// log.Println("New block height is less than or equal to the current height; do nothing")
+		log.Println("New block height is less than or equal to the current height; do nothing")
 		return types.DoNothing
 	case types.NewBlockPrevHashDontMatch:
-		// log.Println("New block previous hash does not match the hash of the latest block in the blockchain; InitiateBroadcastBlockChainRequest")
+		log.Println("New block previous hash does not match the hash of the latest block in the blockchain; InitiateBroadcastBlockChainRequest")
 		selfNode := configuration.GetSelfServerAddress()
 		if selfNode.GetAddress() == receivedFrom.GetAddress() {
-			// log.Panicln("Serious Error: Received invalid block from self node")
+			log.Panicln("Serious Error: Received invalid block from self node")
 			return types.DoNothing
 		}
 		return types.InitiateBroadcastBlockChainRequest
 	case types.NewBlockDuplicateTransactions:
-		// log.Println("New block contains duplicate transactions; do nothing")
+		log.Println("New block contains duplicate transactions; do nothing")
 		return types.DoNothing
 	case types.NewBlockAddedSuccessfully:
-		// log.Println("New block added successfully. Stopping mining and broadcasting the block; InitiateBroadcastBlock")
+		log.Println("New block added successfully. Stopping mining and broadcasting the block; InitiateBroadcastBlock")
 		AbortTheMiningProcess()
 		return types.InitiateBroadcastBlock
 	default:
-		// log.Println("Serious Error: Invalid return type from AddNewBlockToBlockChain")
+		log.Println("Serious Error: Invalid return type from AddNewBlockToBlockChain")
 		return types.DoNothing
 	}
 }
@@ -57,7 +57,7 @@ func HandleNewBChain(newbchain types.BlockChain) {
 
 	currentHeight := bchain.GetLatestBlockHeight()
 	if newHeight <= currentHeight {
-		// log.Println("Received blockchain is not longer than the current blockchain. Do nothing")
+		log.Println("Received blockchain is not longer than the current blockchain. Do nothing")
 		return
 	}
 
@@ -67,34 +67,9 @@ func HandleNewBChain(newbchain types.BlockChain) {
 	nodestate.UnlockBlockChain(bchain)
 
 	if result == types.BlockChainVerificationSuccessful {
-		// log.Println("Received blockchain is valid. Replacing the current blockchain and stopping mining.")
+		log.Println("Received blockchain is valid. Replacing the current blockchain and stopping mining.")
 		nodestate.SetBlockChain(newbchain)
 		AbortTheMiningProcess()
-	}
-}
-
-func HandleTamperedBlockchain(newbchain types.BlockChain, tamperedBlockHeight int) {
-	result, _, _ := VerifyBlockChain(newbchain)
-
-	if result != types.BlockChainVerificationSuccessful {
-		fmt.Println("Blockchain Verification Failed. Restarting mining from tampered block height")
-
-		// Get current Bchain
-		currBchain := nodestate.LockBlockChain()
-
-		// Get to node at the tampered block height
-		currNode := currBchain.LatestNode
-
-		for currNode.Block.Header.Height > tamperedBlockHeight && currNode.Block.Header.Height != tamperedBlockHeight {
-			currNode = currNode.PrevNode
-		}
-
-		currBchain.LatestNode = currNode
-
-		nodestate.UnlockBlockChain(currBchain)
-
-	} else {
-		fmt.Println("BlockChain Verification Successful")
 	}
 }
 
@@ -132,7 +107,7 @@ func AddNewBlockToBlockChain(b types.Block) types.ReturnType {
 
 	success := bchain.AddBlock(b)
 	if !success {
-		// log.Println("Serious Error: Block was not added to the blockchain")
+		log.Println("Serious Error: Block was not added to the blockchain")
 		os.Exit(1)
 	}
 	// log.Println("Transaction Pool Before Pruning:")

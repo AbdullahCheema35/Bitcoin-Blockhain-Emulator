@@ -15,7 +15,6 @@ type BlockHeader struct {
 	MerkleRootHash    string
 	Timestamp         time.Time
 	DifficultyTarget  int
-	Port 			int
 }
 
 // Function to calculate the hash of the block

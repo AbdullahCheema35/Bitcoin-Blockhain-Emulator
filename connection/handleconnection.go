@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"log"
 	"math/rand"
 	"net"
 	"time"
@@ -104,7 +105,7 @@ func ConnectWithNetwork_SafeMode() {
 	// Read Current Resources
 	currentNeighbours, _ := nodestate.ReadCurrentConnections("handleconnection.go: 76")
 	if currentNeighbours >= minNeighbours {
-		// log.Println("No need to add more connections. Currently established connections are", currentNeighbours, "neighbours")
+		log.Println("No need to add more connections. Currently established connections are", currentNeighbours, "neighbours")
 		return
 	}
 	serverNode := configuration.GetSelfServerAddress()
@@ -116,7 +117,7 @@ func ConnectWithNetwork_SafeMode() {
 	if existingNodes == nil {
 		// nodestate.LockBootstrapChan()
 		// nodestate.UnlockBootstrapChan(false)
-		// log.Println("Could not get the list of existing nodes in the network. Exiting...")
+		log.Println("Could not get the list of existing nodes in the network. Exiting...")
 		return
 	}
 	existingNodesList := existingNodes.(NodesList)
@@ -135,9 +136,9 @@ func HandleLostNodeConnection(nc NodeConnection) {
 	// Unlock Resources
 	nodestate.UnlockCurrentConnections(currentConnections, "handleconnection.go: 102")
 	if success {
-		// log.Println("Removed broken node connection with ", nc.Node.GetAddress())
+		log.Println("Removed broken node connection with ", nc.Node.GetAddress())
 	} else {
-		// log.Println("Failed to remove broken node connection with ", nc.Node.GetAddress())
+		log.Println("Failed to remove broken node connection with ", nc.Node.GetAddress())
 	}
 	ConnectWithNetwork_SafeMode()
 }

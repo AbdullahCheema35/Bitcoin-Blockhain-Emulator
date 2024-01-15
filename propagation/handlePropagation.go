@@ -28,9 +28,9 @@ func HandleReceivedBlock(block types.Block, receivedFrom types.NodeAddress) {
 		// log.Println("Initiating broadcast of the received block.")
 		BroadcastBlock(block, receivedFrom)
 	}
-	// // Display all the blocks
-	// bchain := nodestate.ReadBlockChain()
-	// bchain.DisplayHeaderInfo()
+	// Display all the blocks
+	bchain := nodestate.ReadBlockChain()
+	bchain.DisplayHeaderInfo()
 
 }
 

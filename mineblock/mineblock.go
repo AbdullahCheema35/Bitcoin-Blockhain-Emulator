@@ -1,6 +1,8 @@
 package mineblock
 
 import (
+	"log"
+
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/configuration"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/propagation"
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
@@ -25,7 +27,7 @@ func MineBlock(b types.Block, miningProcessAbortedChan chan bool) {
 
 		select {
 		case <-miningProcessAbortedChan:
-			// log.Println("Mining process aborted")
+			log.Println("Mining process aborted")
 			return
 		default:
 			header.Nonce++
