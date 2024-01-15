@@ -88,6 +88,8 @@ func main() {
 	// Keep the program running
 	// select {}
 	// menu()
+	// go displayBlockChain()
+	go checkTransactionPool()
 	periodicallyGenerateRandomTransaction()
 }
 
@@ -142,10 +144,8 @@ func checkTransactionPool() {
 }
 
 func periodicallyGenerateRandomTransaction() {
-	counter := 0
 	for {
-		counter++
-		client.CreateRandomTransaction(counter)
+		client.CreateRandomTransaction()
 		// Sleep for 1 seconds
 		time.Sleep(1000 * time.Millisecond)
 	}
@@ -199,8 +199,6 @@ func Menu() {
 	nodestate.SetBlockChain(blockchain)
 
 	var choice int
-
-	counter := 0
 
 	for {
 		fmt.Println("Menu:")
@@ -275,8 +273,7 @@ func Menu() {
 			fmt.Println("------------------------------")
 			fmt.Println("                       ")
 		}
-		counter++
-		client.CreateRandomTransaction(counter)
+		client.CreateRandomTransaction()
 	}
 }
 
