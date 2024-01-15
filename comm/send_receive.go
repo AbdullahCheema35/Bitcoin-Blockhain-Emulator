@@ -1,16 +1,15 @@
 package comm
 
 import (
+	"encoding/gob"
 	"log"
+	"net"
 
 	"github.com/AbdullahCheema35/Bitcoin-Blockhain-Emulator/types"
 )
 
-func SendMessage(nc types.NodeConnection, message types.Message) bool {
-	enc := nc.GetEncoder()
-	defer func() {
-		nc.SetEncoder(enc)
-	}()
+func SendMessage(conn net.Conn, message types.Message) bool {
+	enc := gob.NewEncoder(conn)
 	err := enc.Encode(&message)
 	if err != nil {
 		// log.Println("Error encoding:", err)
@@ -20,11 +19,8 @@ func SendMessage(nc types.NodeConnection, message types.Message) bool {
 	return true
 }
 
-func ReceiveMessage(nc types.NodeConnection) (bool, types.Message) {
-	dec := nc.GetDecoder()
-	defer func() {
-		nc.SetDecoder(dec)
-	}()
+func ReceiveMessage(conn net.Conn) (bool, types.Message) {
+	dec := gob.NewDecoder(conn)
 	var message types.Message
 	err := dec.Decode(&message)
 	if err != nil {

@@ -64,10 +64,7 @@ func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 			// log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
 			continue
 		}
-		// Create a nodeConn instance
-		nodeConnection := types.NewNodeConnection(node, conn)
-
-		isConnectionRequestSuccess := sendConnectionRequestToNode(nodeConnection)
+		isConnectionRequestSuccess := sendConnectionRequestToNode(node, conn)
 		// // log.Println("Line 59: handleConnection.go")
 		if !isConnectionRequestSuccess {
 			// log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
@@ -77,7 +74,7 @@ func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 			}
 			continue
 		}
-		isConnectionResponseSuccess := receiveConnectionResponseFromNode(nodeConnection)
+		isConnectionResponseSuccess := receiveConnectionResponseFromNode(conn)
 		if !isConnectionResponseSuccess {
 			// log.Println("ECWN_SM: Failed to establish connection with", node.GetAddress())
 			if conn != nil {
@@ -85,8 +82,7 @@ func establishConnectionWithNodes_SafeMode(existingNodesList NodesList) {
 			}
 			continue
 		}
-
-		// Add the nodeConn instance to list of current Connections
+		nodeConnection := types.NewNodeConnection(node, conn)
 		_, currentConnections = nodestate.LockCurrentConnections("Line 68: HandleCOnnecuin.go Add new node")
 		returnVal := AddNewNodeConnection(&currentConnections, nodeConnection, "handleconnection")
 		nodestate.UnlockCurrentConnections(currentConnections, "Line 70: UblockNode HandleCOnnecuin.go")
